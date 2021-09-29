@@ -399,9 +399,13 @@ window,0,xs=10,ys=10
 wdelete
 !p.color=0 & !p.background='ffffff'x & !p.charsize=1.5
 
-;restore,'~/idl/rocket/36290/data/flight_TM2_0_600_image_amegs.sav' ; amegs
-;restore,'data/36290_Flight_TM2_0_585_raw_amegs.SAV' ; data
-restore,'toms_stuff/ma.sav' ; images
+tomsSaveFile = 'data/TM2_36353_Flight_MEGS-A_adata.sav'
+if file_test(tomsSaveFile) ne 1 then begin
+  print,'ERROR: cannot locate Toms save file '+tomsSaveFile
+  stop
+endif
+
+restore,tomsSaveFile
 ; need to create amegs array of structures to match 36.290 adn 36.336
 rec = {time:0.d, pixel_error:0L, fid_index:0, image:fltarr(2048,1024)}
 amegs = replicate(rec,n_elements(images[0,0,*]))

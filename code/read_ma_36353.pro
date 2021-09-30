@@ -389,91 +389,248 @@ stop
 return
 end
 
+;+
+; Need to tune for each rocket to try to correct bad images that are misassembled
+;-
+function fix_corrupted_image, amegs
 
+; replace corrupted images in 36.353 (old way uses a median)
+; (old way) amegs[95].image  = median(amegs[[94,96]].image,dim=3,/even)
+tmp = amegs[95].image
+; top and bottom rows are OK, but middle needs to be fixed
+; have to fix top and bottom separately
+rtmp = rotate(tmp,2) ; 180 deg rotation
+; now need to shift to move VC to the right place
+cn = 344
+rtop = rtmp[*,0:511]
+rtop = shift(rtop,cn) ; guess
+
+rbot = rtmp[*,512:1023]
+rbot = shift(rbot,-1*cn)
+; examine then reassemble
+
+new=tmp ; keep lowest 70 and highest 70 rows
+rn = 70
+new[*,rn:511] = rtop[*,rn:511]
+new[*,512:1023-rn] = rbot[*,0:511-rn]
+new[*,rn] = amegs[94].image[*,rn] ; copy from previous image
+new[*,1023-rn] = amegs[94].image[*,1023-rn]
+
+amegs[95].image = new
+
+return, amegs
+end
+ 
+
+
+
+
+;+
+; Custom rocket flight analysis for MEGS-A only
+; 
+; No parameters or keywords are used.
+;
+; :Examples:
+;   IDL> s = read_ma_36353()
+;-
 function read_ma_36353
 
-
 @config36353
-  
+
 window,0,xs=10,ys=10
 wdelete
 !p.color=0 & !p.background='ffffff'x & !p.charsize=1.5
 
-tomsSaveFile = 'data/TM2_36353_Flight_MEGS-A_adata.sav'
-if file_test(tomsSaveFile) ne 1 then begin
-  print,'ERROR: cannot locate Toms save file '+tomsSaveFile
+; this expects a /code/ dir to contain this file and a /data/ dir at the same level as /code/ containing Tom's saesets
+
+; change to this directory
+workingdir = file_dirname(routine_filepath())
+cd,workingdir
+
+tomsMASaveFile = workingdir+'/../data/TM2_36353_Flight_MEGS-A_adata.sav' ; contains adata
+;tomsMBSaveFile = workingdir+'/../data/TM2_36353_Flight_MEGS-B_bdata.sav' ; contains bdata
+
+;ADATA           STRUCT    = -> <Anonymous> Array[140]
+
+;IDL> help,adata,/str
+;** Structure <253c128>, 5 tags, length=4194328, data length=4194328, refs=1:
+;   TIME            DOUBLE          -809.89897
+;   PIXEL_ERROR     LONG                -2
+;   FID_INDEX       LONG            147630
+;   TOTAL_COUNTS    DOUBLE       2.8983247e+09
+;   IMAGE           UINT      Array[2048, 1024]
+
+if file_test(tomsMASaveFile) ne 1 then begin
+  print,'ERROR: cannot locate Toms MA save file '+tomsMASaveFile
   stop
 endif
+;if file_test(tomsMBSaveFile) ne 1 then begin
+;  print,'ERROR: cannot locate Toms MB save file '+tomsMBSaveFile
+;  stop
+;endif
 
-restore,tomsSaveFile
+restore,tomsMASaveFile
 ; need to create amegs array of structures to match 36.290 adn 36.336
 rec = {time:0.d, pixel_error:0L, fid_index:0, image:fltarr(2048,1024)}
-amegs = replicate(rec,n_elements(images[0,0,*]))
-; keep backwards for now, need to fix VC offsets before reversing
-;amegs.image = reverse(temporary(images),1) ; put in wavelength order
-amegs.image = images ; no reversal yet
+;tmp = replicate(rec,n_elements(images[0,0,*]))
 
-;amegs = temporary(data) ; for 36.290 and 36.336 this is already a structure
-;amegs = temporary(images)
-restore,'toms_stuff/mb.sav'
-description = info              ; info only stored in mb.sav
-reltime = info[0,*] ; seconds since launch (negative before)
+tmp = replicate(rec,n_elements(adata))
+tmp.time = adata.time
+tmp.pixel_error = adata.pixel_error
+tmp.fid_index = adata.fid_index
+tmp.image = float(adata.image)
+
+; need data to be called amegs, fix corrupted images, too
+amegs = fix_corrupted_image(tmp)
+
+; keep backwards for now, need to fix VC offsets before reversing
+; to put in wavelength order do amegs.image = reverse(temporary(images),1)
+;amegs.image = images ; no reversal yet
+
+
+;restore,tomsMBSaveFile
+;description = info              ; info only stored in mb.sav
+;reltime = info[0,*] ; seconds since launch (negative before)
+reltime = amegs.time
+
 
 amegs.time = reform(reltime)
 heap_gc
 ; restores structure amegs with 77 images
-;stop
+
+; look at each image, and the difference with the previous one
+xsize=1920 & ysize=1024
+window,0,xs=xsize,ys=ysize
+window,1,xs=800,ys=400
+window,2,xs=800,ys=400
+for i=0,n_elements(amegs)-1 do begin
+   if amegs[i].time lt 2090 then continue
+   wset,0
+   tmpimg = float(amegs[i].image)
+   tmpimg[*,0:511] -= median(tmpimg[0:3,0:511])
+   tmpimg[*,512:1023] -= median(tmpimg[2043:2047,512:1023])
+   ;tvscl,hist_equal(congrid(amegs[i].image,xsize,ysize))
+   tvscl,hist_equal(congrid(tmpimg,xsize,ysize))
+;   device,decomp=0
+;   tvscl,hist_equal(congrid(amegs[i].image mod 256, xsize, ysize))
+   wset,1
+   previdx = (i + n_elements(amegs) - 1) mod n_elements(amegs) 
+   deltaimg = float(amegs[i].image) - float(amegs[previdx].image)
+   !p.multi=0
+   plot,deltaimg,title='index #'+strtrim(i,2)+'-#'+strtrim(previdx,2)+' T='+strtrim(amegs[i].time,2),yr=median(deltaimg)+[-1.,1.]*6.*stddev(deltaimg),ytit='Difference (DN)
+   wset,2
+   !p.multi=[0,1,2]
+   plot,total(deltaimg,1)/2048.,ystyle=1,xstyle=1, $
+      title='horizontal mean difference of #'+strtrim(i,2)+'-#'+strtrim(previdx,2),xtit='column',ytitle='mean DN/column'
+   plot,total(deltaimg[*,0:511],2)/512.,ystyle=1,xstyle=1,$
+      title='vertical mean difference of #'+strtrim(i,2)+'-#'+strtrim(previdx,2),xtit='row',ytitle='mean DN/row'
+;   device,decomp=1
+   oplot,total(deltaimg[*,512:1023],2)/512.,co='fe'x
+   if i eq 95 then stop
+end
+stop
 
 ;36.258
-;0,3,5,7,9,11,13,15,16,18,22,24,26,27,29 dark
-;1,55 is corrupted
-;2,25 is flatfield
-; 4,6,8,10,12,14,17,19,20,21,23,28 waves, dark
-; 30 partial sun, waves
-; 31 partial sun lots of motion
-; 32,33, 35,36, 38,39,40,41,42,43, 45,46,47,48,49,50,51,52,53 solar (rising)
-; 34,37,44 solar with small waves
-; 54,56,57,58(w),59,60(w),61,62(w),63,64,65(w),66  solar (falling)
-; 67 partial solar
-; 69,71,72,73,74,75,76 dark waves
-; 68 dark
-; 70 flatfield
+; 0 dark has vertical spike streak and frozen curve shape from power-up residual - discard (~9 DN off from final image)
+; 1 dark shows weak horizontal bright/dim alternating patterns
+; 2, 3 dark - discard, center values are decreasing as time goes forward and the detector settles down
+; 4 dark shows similar horizontal ripple noise pattern - discard, center values are decreasing
+; 5-7 dark, center values are decreasing
+; discard all previous images
+; 8 dark shows some larger period ripple noise pattern - ok? center values seem to have stabilized
+; 9,10 dark
+; 11 dark shows horizontal ripple pattern - discard
+; 12-14 dark
+; 15 dark shows some horizontal ripple pattern - discard
+; 16,17 dark
+; 18 dark shows some horizontal ripples - discard
+; 19,20 dark
+; 21 dark shows some horizontal ripples - discard
+; 22,23 dark
+; 24 dark has both horizontal and diagonal ripple pattern - discard
+; 25, 26 dark has diagonal ripple patterns in slit 1 side
+; 27 dark shows both horizontal and diagonal ripple pattern - discard
+; 28 dark
+; 29 dark shows some horizontal ripples - discard
+; 30 dark
+; 31 dark has diagonal ripple patterns in slit 1 side
+; 32 dark shows both horizontal and diagonal ripple pattern - discard
+; 33,34 dark has diagonal ripple patterns in slit 1 side
+; 35 is partial RC with partial darks - discard
+; 36 full RC
+; 37 full RC has horizontal and diagonal ripple pattern
+; 38, 39, 40 full RC
+; 41, 42 partial dark discard
+; 43-45 test pattern
+; 46 partial test pattern/dark
+; 47 dark shows both horizontal and diagonal ripple pattern - discard
+; 48 dark has diagonal ripple patterns in slit 1 side
+; 49 dark shows both horizontal and diagonal ripple pattern - discard
+; 50,51 dark has diagonal ripple patterns in slit 1 side
+; 52 dark shows both horizontal and diagonal ripple pattern - discard
+; 53 dark has diagonal ripple patterns in slit 1 side
+; 54 dark shows both horizontal and diagonal ripple pattern - discard
+; 55,56 dark has diagonal ripple patterns in slit 1 side
+; 57 dark shows both horizontal and diagonal ripple pattern - discard
+; 58 dark has diagonal ripple patterns in slit 1 side
+; 59 FF partially on
+; 60 FF full, 61 FF is dimmer, 62 FF is dimmer, 63 partially on FF
+; 64 dark has diagonal ripple patterns in slit 1 side
+; 65 dark shows both horizontal and diagonal ripple pattern - discard
+; 66 dark has diagonal ripple patterns in slit 1 side
+; 67 dark shows both horizontal and diagonal ripple pattern - discard
+; 68,69 dark has diagonal ripple patterns in slit 1 side
+; 70,71 dark has diagonal ripple patterns in slit 1 side
+; 72 dark shows both horizontal and diagonal ripple pattern - discard
+; 73,74 dark has diagonal ripple patterns in slit 1 side
+; 75 dark shows both horizontal and diagonal ripple pattern - discard
+; 76 dark has diagonal ripple patterns in slit 1 side
+; 77 dark shows both horizontal only near center and diagonal ripple pattern - ok?
+; 78,79 dark has diagonal ripple patterns in slit 1 side
+; 80 dark shows both horizontal and diagonal ripple pattern - discard
+; 81,82 dark has diagonal ripple patterns in slit 1 side
+; 83 dark shows both horizontal and diagonal ripple pattern - discard
+; 84 dark has diagonal ripple patterns in slit 1 side
+; 85 dark has diagonal ripple patterns in slit 1 side and some corruption near center from data loss
+; 86 dark shows both horizontal and diagonal ripple pattern - discard
+; 87 FF partially on
+; 88 dark shows both horizontal and diagonal ripple pattern - discard
+; 89,90 dark has diagonal ripple patterns in slit 1 side
+; 91 dark shows both horizontal and diagonal ripple pattern - discard
+; 92 first light smear - acquiring sun - discard
+; 93 nearly full spectrum - acquiting sun, not centered - discard
+; 94 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1
+; 95 data loss - corrupted - discard
+; 96 sun centered full spectrum - diagonal pattern on slit 1
+; 97 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
+; 98 sun centered full spectrum - diagonal pattern on slit 1
+; 99 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly above the slit 2 spectrum toward center)
+; 100,101,102,103 sun centered full spectrum - diagonal pattern on slit 1
+; 104 sun centered full spectrum - diagonal pattern on slit 1 - two huge particle strikes diagonally in slit 1
+; 105,106,107 sun centered full spectrum - diagonal pattern on slit 1
+; 108 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
+; 109,110 sun centered full spectrum - diagonal pattern on slit 1
+; 111 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
+; 112 sun centered full spectrum - diagonal pattern on slit 1
+; 113 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly above the slit 2 spectrum toward center)
+; 114,115 sun centered full spectrum - diagonal pattern on slit 1
+; 116 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly above the slit 2 spectrum toward center)
+; 117 sun centered full spectrum - diagonal pattern on slit 1 (dark band under slit 1)
+; 118 sun centered full spectrum - diagonal pattern on slit 1
+; 119 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is in the center of slit 2)
+; 120,121 sun centered full spectrum - diagonal pattern on slit 1
+; 122 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
+; 123,124 sun centered full spectrum - diagonal pattern on slit 1
+; 125 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
+; 126,127 sun centered full spectrum - diagonal pattern on slit 1 noticable dimmer solar signal
+; 128 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly above the slit 2 spectrum toward center)
+; 129 sun centered full spectrum - diagonal pattern on slit 1 nearly all solar signal is gone from long wavelenghts of slit 2
+; 130,131 dark has diagonal ripple patterns in slit 1 side
+; 132,133,134 FF (135 is different)
+; 136,137 dark has diagonal ripple patterns in slit 1 side
+; 138,139 dark shows both lower frequency horizontal and diagonal ripple pattern - discard
 
-; replace corrupted images in 36.258 with a median
-amegs[1].image  = median(amegs[[0,2,3]].image,dim=3)
-amegs[55].image = median(amegs[[53,54,56,57]].image,dim=3,/even)
-
-;36.290
-; 0 has waves
-; 1,2,3,4 dark
-; 5 has waves
-; 6 flatfield
-; 7,8,9 dark
-; 10 has waves
-; 11 has partial sun, lots of movement of the spectrum, smearing
-; 12 has partial sun, lots of movement, falling off bottom of detector
-; 13 shows small sun movement, smearing vertically
-; 14 looks pretty good
-; 15 has waves
-; 16-19 looks good
-; 20 has waves
-; 21-24 looks good
-; 25 has waves
-; 26-29 looks good
-; 30 has waves
-; 31-35 looks good
-; 36 and 37 have weak waves
-; 38,39 are good
-; 40 has a big streak across 17.8-20nm that needs to be fixed
-; 41-47 noticably dimming
-; 48 very little sun
-; 49 dark
-; 50 flatfield
-; 51,52,53 flatfield
-; 54,55 dark
-; 56 waves
-; 57 dark
-
+postdark=[130,131,136,137]
 
 orig=amegs
 ; adjust locations by 4 pixels to fix real pixel locations
@@ -492,6 +649,13 @@ endfor
 ;put in wavelength order
 print,'INFO: reversing images to put in wavelength order'
 for i=0,n_elements(amegs)-1 do amegs[i].image=reverse(amegs[i].image)
+
+stop
+return,-1
+end
+
+
+function temp
 
 print,'INFO: removing dark from all images'
 status=remove_megsa_dark_36353(amegs, nodarkimg)

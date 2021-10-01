@@ -51,8 +51,10 @@ darkmask[120:*,512:1023]=0b ; keep 4-120 short wavelength side
 ; of the CCD
 ;preidx=[1,2,3,4,7,8,9]
 ;postidx=[49,54,55,57]
-preidx=[0,5,7,9,11,13,15,17,18,24,27,29]
-postidx=[68,69, 74,75,76]
+;preidx=[0,5,7,9,11,13,15,17,18,24,27,29]
+;postidx=[68,69, 74,75,76]
+preidx=[81,82,84,89,90]
+postidx=[130,131,136,137]
 
 ; determine a pre-observation dark and a post-observation dark
 ; goal is to linearly interpolate dark for each solar image
@@ -109,7 +111,7 @@ for i=0,n_elements(output)-1 do begin
   endfor
 endfor
 
-stop
+;stop
 ; subtract the dark everywhere
 output.image = float(amegs.image) - output.dark
 output.total_counts = total(total(output.image,1,/double),1,/double)
@@ -120,6 +122,8 @@ end
 ;+
 ;-
 pro filterimgspike, arr, output_in
+
+; needs at least 6 images for heavy filtering
 
 output = output_in[arr]       ; only use specified subset 9/8/20 for 36.258 2010 rocket
   
@@ -134,7 +138,7 @@ enable_heavy_filter = 0 ; only heavily filter dark
 ; solar means are around 7.0
 ; flatfield means are over 6000.0
 
-if mean(imgmean) lt 2 then begin
+if mean(imgmean) lt 2 and n_elements(output) gt 5 then begin
    ; this is dark corrected dark data
    enable_heavy_filter=1
 endif
@@ -166,7 +170,7 @@ for i=0L,n_elements(output)-1 do begin
 
 endfor
 endif
-stop
+;stop
 
    
 ; dark heavy filter added for 36.258 2010 rocket
@@ -241,10 +245,15 @@ output.image = input.image
 ; only work on "good" solar data
 
 ;identify types
-dark1idx=[0,3,5,7,9,11,13,15,16,18,22,24,26,27,29]
-ffidx=[2,25,70]
-solaridx=[31,32,33, 35,36, 38,39,40,41,42,43, 45,46,47,48,49,50,51,52,53,54, 56,57,58,59,60,61,62,63,64,65,66]
-dark2idx=[67,68,69, 71,72,73,74,75,76] ; only 68 has no waves
+;dark1idx=[0,3,5,7,9,11,13,15,16,18,22,24,26,27,29]
+;ffidx=[2,25,70]
+;solaridx=[31,32,33, 35,36, 38,39,40,41,42,43, 45,46,47,48,49,50,51,52,53,54, 56,57,58,59,60,61,62,63,64,65,66]
+;dark2idx=[67,68,69, 71,72,73,74,75,76] ; only 68 has no waves
+
+dark1idx=[81,82,84,89,90]
+ffidx=[133,134]
+solaridx=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
+dark2idx=[130,131,136,137]
 
 filterimgspike, dark1idx, output
 filterimgspike, ffidx, output
@@ -500,9 +509,9 @@ heap_gc
 
 ; look at each image, and the difference with the previous one
 xsize=1920 & ysize=1024
-window,0,xs=xsize,ys=ysize
-window,1,xs=800,ys=400
-window,2,xs=800,ys=400
+;window,0,xs=xsize,ys=ysize
+;window,1,xs=800,ys=400
+;window,2,xs=800,ys=400
 for i=0,n_elements(amegs)-1 do begin
    if amegs[i].time lt 2090 then continue
    wset,0
@@ -528,7 +537,7 @@ for i=0,n_elements(amegs)-1 do begin
    oplot,total(deltaimg[*,512:1023],2)/512.,co='fe'x
    if i eq 95 then stop
 end
-stop
+;stop
 
 ;36.258
 ; 0 dark has vertical spike streak and frozen curve shape from power-up residual - discard (~9 DN off from final image)
@@ -598,9 +607,9 @@ stop
 ; 89,90 dark has diagonal ripple patterns in slit 1 side
 ; 91 dark shows both horizontal and diagonal ripple pattern - discard
 ; 92 first light smear - acquiring sun - discard
-; 93 nearly full spectrum - acquiting sun, not centered - discard
+; 93 nearly full spectrum - acquiring sun, not centered - discard
 ; 94 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1
-; 95 data loss - corrupted - discard
+; 95 data loss - corrupted - FIXED in fix_corrupted_image
 ; 96 sun centered full spectrum - diagonal pattern on slit 1
 ; 97 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
 ; 98 sun centered full spectrum - diagonal pattern on slit 1
@@ -630,7 +639,13 @@ stop
 ; 136,137 dark has diagonal ripple patterns in slit 1 side
 ; 138,139 dark shows both lower frequency horizontal and diagonal ripple pattern - discard
 
-postdark=[130,131,136,137]
+preidx=[81,82,84,89,90] ; remove_megsa_dark
+postidx=[130,131,136,137]
+
+dark1idx=[81,82,84,89,90] ; remove_megsa_spikes
+ffidx=[133,134]
+solaridx=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
+dark2idx=[130,131,136,137]
 
 orig=amegs
 ; adjust locations by 4 pixels to fix real pixel locations
@@ -650,12 +665,6 @@ endfor
 print,'INFO: reversing images to put in wavelength order'
 for i=0,n_elements(amegs)-1 do amegs[i].image=reverse(amegs[i].image)
 
-stop
-return,-1
-end
-
-
-function temp
 
 print,'INFO: removing dark from all images'
 status=remove_megsa_dark_36353(amegs, nodarkimg)
@@ -663,6 +672,32 @@ status=remove_megsa_dark_36353(amegs, nodarkimg)
 ; now do particle filtering
 print,'INFO: removing spikes'
 nospikes=remove_megsa_spikes_36353(nodarkimg)
+
+; image 104 needs work on slit 1
+
+; save these results for Phil and the others
+print,'saving intermediate data for analysis by others'
+tmp=strsplit(systime(),/extract)
+ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
+file='rkt36353_megsa_dark_particles_'+ts+'.sav'
+rec={time:0., image:fltarr(2048,1024)}
+gd=where(nospikes.time gt -60,n_gd)
+ma_no_spikes = replicate(rec,n_gd)
+ma_no_spikes.time = nospikes[gd].time
+ma_no_spikes.image = nospikes[gd].image
+stop,'*** you really do not want to save this if it is not necessary***'
+save,file=file, ma_no_spikes, /compress
+ma_no_spikes=0b
+heap_gc
+print,'saved'
+stop
+
+return,-1
+end
+
+
+function temp
+
 ; image #44 doesn't seem to be filtered for spikes very well
 bad=where(nospikes[44].image - nospikes[43].image gt 250,n_bad)
 nospikes[44].image[bad] = nospikes[43].image[bad] ; manual fix

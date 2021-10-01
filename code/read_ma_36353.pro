@@ -676,32 +676,30 @@ nospikes=remove_megsa_spikes_36353(nodarkimg)
 ; image 104 needs work on slit 1
 
 ; save these results for Phil and the others
-print,'saving intermediate data for analysis by others'
-tmp=strsplit(systime(),/extract)
-ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
-file='../data/rkt36353_megsa_dark_particles_'+ts+'.sav'
-rec={time:0., image:fltarr(2048,1024)}
-gd=where(nospikes.time gt -60,n_gd)
-ma_no_spikes = replicate(rec,n_gd)
-ma_no_spikes.time = nospikes[gd].time
-ma_no_spikes.image = nospikes[gd].image
-stop,'*** you really do not want to save this if it is not necessary***'
-save,file=file, ma_no_spikes, /compress
-ma_no_spikes=0b
+if save_filtered_img eq 1 then begin
+   print,'saving intermediate data for analysis by others'
+   tmp=strsplit(systime(),/extract)
+   ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
+   file='../data/rkt36353_megsa_dark_particles_'+ts+'.sav'
+   rec={time:0., image:fltarr(2048,1024)}
+   gd=where(nospikes.time gt -60,n_gd)
+   ma_no_spikes = replicate(rec,n_gd)
+   ma_no_spikes.time = nospikes[gd].time
+   ma_no_spikes.image = nospikes[gd].image
+   stop,'*** you really do not want to save this if it is not necessary***'
+   save,file=file, ma_no_spikes, /compress
+   ma_no_spikes=0b
+   print,'saved'
+endif
+   
 heap_gc
-print,'saved'
-stop
-
-return,-1
-end
 
 
-function temp
-
-; image #44 doesn't seem to be filtered for spikes very well
-bad=where(nospikes[44].image - nospikes[43].image gt 250,n_bad)
-nospikes[44].image[bad] = nospikes[43].image[bad] ; manual fix
-stop
+; to manually repair some spikes, do something like this...
+;; image #44 doesn't seem to be filtered for spikes very well
+;bad=where(nospikes[44].image - nospikes[43].image gt 250,n_bad)
+;nospikes[44].image[bad] = nospikes[43].image[bad] ; manual fix
+;stop
 
 ;restore,'data/SURF_Sep10_sensitivity_megs_a1_fw0.sav' ; sensitivity includes gain
 restore,'data/sensitivity_MEGSA1_second_order_2013.sav' ; sensitivity includes gain
@@ -717,6 +715,13 @@ bad=where(old1 lt 1e-8 or old1 gt 1e-2,n_bad)
 old1[bad] = 1e-2
 old1_sensitivity_error = old1*0.1 ;10% sensitivity_error
 
+stop
+
+return,-1
+end
+
+
+function temp
 
 ; new code 8/19 can remove the reverse
 print,'INFO: getting slit 1 sensitivity'

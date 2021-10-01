@@ -401,7 +401,7 @@ end
 ;+
 ; Need to tune for each rocket to try to correct bad images that are misassembled
 ;-
-function fix_corrupted_image, amegs
+function fix_ma_corrupted_image, amegs
 
 ; replace corrupted images in 36.353 (old way uses a median)
 ; (old way) amegs[95].image  = median(amegs[[94,96]].image,dim=3,/even)
@@ -482,7 +482,7 @@ endif
 ;endif
 
 restore,tomsMASaveFile
-; need to create amegs array of structures to match 36.290 adn 36.336
+; need to create amegs array of structures to match 36.290 and 36.336
 rec = {time:0.d, pixel_error:0L, fid_index:0, image:fltarr(2048,1024)}
 ;tmp = replicate(rec,n_elements(images[0,0,*]))
 
@@ -493,7 +493,7 @@ tmp.fid_index = adata.fid_index
 tmp.image = float(adata.image)
 
 ; need data to be called amegs, fix corrupted images, too
-amegs = fix_corrupted_image(tmp)
+amegs = fix_ma_corrupted_image(tmp)
 
 ; keep backwards for now, need to fix VC offsets before reversing
 ; to put in wavelength order do amegs.image = reverse(temporary(images),1)
@@ -542,7 +542,7 @@ for i=0,n_elements(amegs)-1 do begin
 end
 ;stop
 
-;36.258
+;36.353 MA
 ; 0 dark has vertical spike streak and frozen curve shape from power-up residual - discard (~9 DN off from final image)
 ; 1 dark shows weak horizontal bright/dim alternating patterns
 ; 2, 3 dark - discard, center values are decreasing as time goes forward and the detector settles down
@@ -645,13 +645,13 @@ end
 ; 136,137 dark has diagonal ripple patterns in slit 1 side
 ; 138,139 dark shows both lower frequency horizontal and diagonal ripple pattern - discard
 
-preidx=[81,82,84,89,90] ; remove_megsa_dark
-postidx=[130,131,136,137]
-
 dark1idx=[81,82,84,89,90] ; remove_megsa_spikes
 ffidx=[133,134]
 solaridx=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
 dark2idx=[130,131,136,137]
+
+preidx=dark1idx ; for remove_megsa_dark
+postidx=dark2idx
 
 orig=amegs
 ; adjust locations by 4 pixels to fix real pixel locations

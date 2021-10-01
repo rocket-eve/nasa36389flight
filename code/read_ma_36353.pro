@@ -715,13 +715,6 @@ bad=where(old1 lt 1e-8 or old1 gt 1e-2,n_bad)
 old1[bad] = 1e-2
 old1_sensitivity_error = old1*0.1 ;10% sensitivity_error
 
-stop
-
-return,-1
-end
-
-
-function temp
 
 ; new code 8/19 can remove the reverse
 print,'INFO: getting slit 1 sensitivity'
@@ -794,6 +787,14 @@ nospikes.image *= 0.1d ; divide by integration time 10 seconds
 calimg=nospikes
 
 stop
+
+stop
+
+return,-1
+end
+
+
+function temp
 
 print,'INFO: integrating to create cps spectra'
 make_ma_spectra36353, nospikes, spectra_cps, a1mask, a2mask, $

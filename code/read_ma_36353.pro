@@ -446,6 +446,9 @@ function read_ma_36353
 
 @config36353
 
+save_filtered_img = 0 ; set to 1 to write rkt36###_megsa_dark_particles_.sav
+; only need to save once all the images are identified
+
 window,0,xs=10,ys=10
 wdelete
 !p.color=0 & !p.background='ffffff'x & !p.charsize=1.5
@@ -597,6 +600,9 @@ end
 ; 77 dark shows both horizontal only near center and diagonal ripple pattern - ok?
 ; 78,79 dark has diagonal ripple patterns in slit 1 side
 ; 80 dark shows both horizontal and diagonal ripple pattern - discard
+; ***
+; LAUNCH, internal power change may change dark/noise
+; ***
 ; 81,82 dark has diagonal ripple patterns in slit 1 side
 ; 83 dark shows both horizontal and diagonal ripple pattern - discard
 ; 84 dark has diagonal ripple patterns in slit 1 side
@@ -702,7 +708,7 @@ heap_gc
 ;stop
 
 ;restore,'data/SURF_Sep10_sensitivity_megs_a1_fw0.sav' ; sensitivity includes gain
-restore,'data/sensitivity_MEGSA1_second_order_2013.sav' ; sensitivity includes gain
+restore,'../data/sensitivity_MEGSA1_second_order_2013.sav' ; sensitivity includes gain
 old1=sens_uncorrected ;sensitivity
 ; fill old1
 for i=0,2047 do begin
@@ -729,7 +735,7 @@ a1sensitivity = a1sens[*,512:*] ; cut off
 a1senserr=reverse(old1_sensitivity_error[*,512:1023] * 1.1) > 1e-11 
 
 
-restore,'data/36336sensitivity_MEGSA2_second_order_2017.sav' ; sensitivity from Brian 7/17/19
+restore,'../data/36336sensitivity_MEGSA2_second_order_2017.sav' ; sensitivity from Brian 7/17/19
 ; MEGS-A2 save file from 36336 contains these items
 ;COMMENTS        STRING    = Array[4]
 ;SENS_CORRECTED1 FLOAT     = Array[2048, 1024] ; 
@@ -774,7 +780,7 @@ new2 = get_36353_sensitivity(/megsa2)
 ;bad=where(new2 lt 1e-8 ,n_bad)
 ;if n_bad gt 0 then new2[bad]=.001 ; make bad places insensitive
 
-stop
+;stop
 
 ; TODO: fix uncertainties (new ones are not good)
 sensitivity_error = (old2_sensitivity_error * 1.1) > 1e-11

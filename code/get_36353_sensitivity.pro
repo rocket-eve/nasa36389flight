@@ -1,5 +1,7 @@
 function get_36353_sensitivity, megsa1=megsa1, megsa2=megsa2, megsb=megsb
 
+  datapath = '../data/'
+
   if keyword_set(megsa1) then begin
      ; sensitivity_MEGSA1_second_order_2017.sav has two additional vectors
      ; spec_corrected1: This vector contains spec_uncorrected corrected for second order using 2009 data
@@ -9,7 +11,7 @@ function get_36353_sensitivity, megsa1=megsa1, megsa2=megsa2, megsb=megsb
      ; the above saveset has too low of values at 17.1 nm for both slits
      
      print,'WARNING: USING 36336(2018) MA2 SENSITIVITY'
-     restore,'data/36336sensitivity_MEGSA1_second_order_2017.sav' ; sensitivity from Brian 7/17/19
+     restore,datapath+'36336sensitivity_MEGSA1_second_order_2017.sav' ; sensitivity from Brian 7/17/19
 
      ; Brian reverses some sensitivity maps and not others
      ; zero is used to fill so use one row to find where the sensitivity
@@ -79,7 +81,7 @@ function get_36353_sensitivity, megsa1=megsa1, megsa2=megsa2, megsb=megsb
      ; spec_corrected3: This vector contains spec_uncorrected corrected for second order using 285MeV data from 2009
 
      print,'WARNING: USING 36336(2018) MA2 SENSITIVITY'
-     restore,'data/36336sensitivity_MEGSA2_second_order_2017.sav' ; sensitivity from Brian 7/17/19
+     restore,datapath+'36336sensitivity_MEGSA2_second_order_2017.sav' ; sensitivity from Brian 7/17/19
      ; MEGS-A2 save file from 36336 contains these items
      ;COMMENTS        STRING    = Array[4]
      ;SENS_CORRECTED1 FLOAT     = Array[2048, 1024] ; 
@@ -134,7 +136,7 @@ function get_36353_sensitivity, megsa1=megsa1, megsa2=megsa2, megsb=megsb
 
   if keyword_set(megsb) then begin
      ; from Brian 7/19/19 v38 ***
-     sensfile='data/36336sensitivity_MEGSB_fw0_380MeV_2017.sav' ; scaled to A2 in overlap
+     sensfile=datapath+'36336sensitivity_MEGSB_fw0_380MeV_2017.sav' ; scaled to A2 in overlap
      ; alpha, beta, filter, instrument, sensitivity[2048,1024], sensitivity_error[2048,1024]
 
      restore,sensfile

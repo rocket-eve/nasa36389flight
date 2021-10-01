@@ -679,7 +679,7 @@ nospikes=remove_megsa_spikes_36353(nodarkimg)
 print,'saving intermediate data for analysis by others'
 tmp=strsplit(systime(),/extract)
 ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
-file='rkt36353_megsa_dark_particles_'+ts+'.sav'
+file='../data/rkt36353_megsa_dark_particles_'+ts+'.sav'
 rec={time:0., image:fltarr(2048,1024)}
 gd=where(nospikes.time gt -60,n_gd)
 ma_no_spikes = replicate(rec,n_gd)

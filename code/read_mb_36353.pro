@@ -848,7 +848,7 @@ if save_filtered_img eq 1 then begin
    mb_no_spikes.image = nospikes[gd].image
    stop,'*** you really do not want to save this if it is not necessary***'
    save,file=file, mb_no_spikes, /compress
-   ma_no_spikes=0b
+   mb_no_spikes=0b
    print,'saved'
 endif
    

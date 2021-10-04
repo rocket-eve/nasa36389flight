@@ -14,6 +14,8 @@
 ;-
 function remove_megsa_dark_36353, amegs, output
 
+@config36353
+
 ; determine a pre-observation dark and a post-observation dark
 ; goal is to linearly interpolate dark for each solar image
 
@@ -53,8 +55,8 @@ darkmask[120:*,512:1023]=0b ; keep 4-120 short wavelength side
 ;postidx=[49,54,55,57]
 ;preidx=[0,5,7,9,11,13,15,17,18,24,27,29]
 ;postidx=[68,69, 74,75,76]
-preidx=[81,82,84,89,90]
-postidx=[130,131,136,137]
+preidx  = dark1idx_a ;[81,82,84,89,90]
+postidx = dark2idx_a ;[130,131,136,137]
 
 ; determine a pre-observation dark and a post-observation dark
 ; goal is to linearly interpolate dark for each solar image
@@ -228,6 +230,8 @@ end
 ;-
 function remove_megsa_spikes_36353, input, zzmask=zzmask
 
+@config36353
+
 imgdim=size(input[0].image,/dim)
 newrec={time:0.d, $
   image:fltarr(imgdim), spikes:fltarr(imgdim)}
@@ -250,10 +254,10 @@ output.image = input.image
 ;solaridx=[31,32,33, 35,36, 38,39,40,41,42,43, 45,46,47,48,49,50,51,52,53,54, 56,57,58,59,60,61,62,63,64,65,66]
 ;dark2idx=[67,68,69, 71,72,73,74,75,76] ; only 68 has no waves
 
-dark1idx=[81,82,84,89,90]
-ffidx=[133,134]
-solaridx=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
-dark2idx=[130,131,136,137]
+dark1idx=dark1idx_a ;[81,82,84,89,90]
+ffidx= ffidx_a ;[133,134]
+solaridx=solaridx_a ;[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
+dark2idx=dark2idx_a ;[130,131,136,137]
 
 filterimgspike, dark1idx, output
 filterimgspike, ffidx, output
@@ -645,13 +649,13 @@ end
 ; 136,137 dark has diagonal ripple patterns in slit 1 side
 ; 138,139 dark shows both lower frequency horizontal and diagonal ripple pattern - discard
 
-dark1idx=[81,82,84,89,90] ; remove_megsa_spikes
-ffidx=[133,134]
-solaridx=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
-dark2idx=[130,131,136,137]
-
-preidx=dark1idx ; for remove_megsa_dark
-postidx=dark2idx
+;dark1idx_a=[81,82,84,89,90] ; remove_megsa_spikes
+;ffidx_a=[133,134]
+;solaridx_a=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
+;dark2idx_a=[130,131,136,137]
+;
+;preidx=dark1idx_a ; used in remove_megsa_dark
+;postidx=dark2idx_a
 
 orig=amegs
 ; adjust locations by 4 pixels to fix real pixel locations

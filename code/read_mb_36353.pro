@@ -49,8 +49,8 @@ darkmask[*,0] = 0 & darkmask[*,1023]=0 ; top/bottom rows
 ;preidx=[20,21,22,23,24,29] ; not sure if 4 images is enough for a 3-image median
 ;postidx=[68,69,73,75,76]
 
-preidx=[81,83,84,86,89,90] ; remove_megsb_spikes
-postidx=[130,138,139]
+preidx = dark1idx_b ;[81,83,84,86,89,90] ; remove_megsb_spikes
+postidx = dark2idx_b ;[130,138,139]
 
 ; determine a pre-observation dark and a post-observation dark
 ; goal is to linearly interpolate dark for each solar image
@@ -325,6 +325,8 @@ end
 ;-
 function remove_megsb_spikes_36353, input, output
 
+@config36353
+
 imgdim=size(input[0].image,/dim)
 
 output.image = input.image
@@ -359,10 +361,10 @@ output.image = input.image
 ;dark2idx=[68,69,71,72,73,74,75,76]
 
 ; 36.353
-dark1idx=[81,83,84,86,89,90] ; remove_megsb_spikes
-ffidx=[133,134]
-solaridx=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
-dark2idx=[130,138,139]
+dark1idx = dark1idx_b ;[81,83,84,86,89,90] ; remove_megsb_spikes
+ffidx = ffidx_b ;[133,134]
+solaridx = solaridx_b ;[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
+dark2idx = dark2idx_b ;[130,138,139]
 
 
 filterimgspike, dark1idx, output, /heavy
@@ -700,14 +702,14 @@ bmegs.image[3,1023] = bmegs.image[3,1022]     ; replace other half pair
 ; 136,137 shows both lower frequency horizontal and diagonal ripple pattern - discard
 ; 138,139 dark has diagonal ripple patterns 
 
-dark1idx=[81,83,84,86,89,90] ; remove_megsb_spikes
-ffidx=[133,134]
-solaridx=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
-;dark2idx=[130,136,137,138,139]
-dark2idx=[130,138,139]
-
-preidx=dark1idx ; for remove_megsb_dark
-postidx=dark2idx
+;dark1idx_b=[81,83,84,86,89,90] ; remove_megsb_spikes
+;ffidx_b=[133,134]
+;solaridx_b=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
+;;dark2idx=[130,136,137,138,139]
+;dark2idx_b=[130,138,139]
+;
+;preidx=dark1idx_b ; for remove_megsb_dark
+;postidx=dark2idx_b
 
 ; 36.258 MEGS-B
 ; 0 small waves in dark

@@ -200,7 +200,7 @@ end
 
 ;+
 ;-
-pro filterimgspike, arr, output_in, heavy=heavy
+pro mb_filterimgspike, arr, output_in, heavy=heavy
 
 output = output_in[arr]       ; only use specified subset 9/8/20 for 36.258 2010 rocket
 
@@ -367,10 +367,10 @@ solaridx = solaridx_b ;[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,10
 dark2idx = dark2idx_b ;[130,138,139]
 
 
-filterimgspike, dark1idx, output, /heavy
-filterimgspike, ffidx, output ;, /heavy ; need at least 3 to run /heavy
-filterimgspike, solaridx, output
-filterimgspike, dark2idx, output, /heavy
+mb_filterimgspike, dark1idx, output, /heavy
+mb_filterimgspike, ffidx, output ;, /heavy ; need at least 3 to run /heavy
+mb_filterimgspike, solaridx, output
+mb_filterimgspike, dark2idx, output, /heavy
 
 return,output
 end

@@ -34,3 +34,15 @@ megsa_solar_lines.dat (slit 2)
 reference_ma_spectrum_nrleuv_max.dat
 regrid_spectra_mac.so (shouldn't be needed)
 regrid_spectra_mac64.so
+
+MEGS-B files needed
+make_megsb_spectrum (main)
+get_eve_mb_avg
+megsb_image_to_spectrum
+megsb_tuned_mask
+plot_mb_lines
+make_megsb_wave_img
+make_megsb_stripe
+megs_wave_defines
+
+megsb_default_mask.sav

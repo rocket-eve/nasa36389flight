@@ -33,7 +33,9 @@ if !p.color ne 0 then begin
    !p.color=0
 endif
 
-rktnum = '353' ; as in 36.353
+@config36353
+
+numberstr = numberstr ;'353' ; as in 36.353
 
 ; SLIT 1
 linefile1='megsa1_solar_lines.dat'
@@ -64,7 +66,7 @@ workingdir = file_dirname(routine_filepath()) ; in wavelength dir
 cd,workingdir
 
 datapath = '../../data/'
-restore,datapath+'rkt36'+rktnum+'_megsa_dark_particles_Sep_30_2021.sav'
+restore,datapath+'rkt36'+numberstr+'_megsa_dark_particles_Sep_30_2021.sav'
 data = temporary(ma_no_spikes)
 
 predarklist=[1,2,3,4,5]
@@ -134,8 +136,8 @@ ma *= zmask
 make_megsa_wave_img, ma[*,0:511], wimg2, sp2wave, sp2out, file=linefile2
 make_megsa_wave_img, ma[*,512:*], wimg1, sp1wave, sp1out, file=linefile1,/slit1
 !p.multi=[0,1,2]
-plot,sp1wave,sp1out,/ylog,yr=[100,1e5],tit='Slit 1 36.'+rktnum,xtit='Wavelength (nm)'
-plot,sp2wave,sp2out,/ylog,yr=[100,1e6],tit='Slit 2 36.'+rktnum,xtit='Wavelength (nm)'
+plot,sp1wave,sp1out,/ylog,yr=[100,1e5],tit='Slit 1 36.'+numberstr,xtit='Wavelength (nm)'
+plot,sp2wave,sp2out,/ylog,yr=[100,1e6],tit='Slit 2 36.'+numberstr,xtit='Wavelength (nm)'
 stop
 ;; avg img
 ;make_megsa_wave_img, ama[*,0:511], wimg2, sp2wave, asp2out, file=linefile2
@@ -177,7 +179,7 @@ sf0=total(sp1out[tmp17])/total(sp2out[tmp17])
 tmpn17=where(nrlmax[0,*] gt 17 and nrlmax[0,*] lt 17.2)
 sfn=total(sp1out[tmp17])/total(nrlmax[1,tmpn17])
 
-save,file='rkt36'+rktnum+'_countspectrum.sav', sp1wave, sp2wave, sp1out, sp2out, lw, nrlmax, eve_sp1, eve_sp2
+save,file='rkt36'+numberstr+'_countspectrum.sav', sp1wave, sp2wave, sp1out, sp2out, lw, nrlmax, eve_sp1, eve_sp2
 print,'saved countspectrum'
 
 !p.charsize=1.5
@@ -279,10 +281,10 @@ stop
 ;waveimg2 = waveimg
 ;stop
 
-description=systime(0,/utc)+' Fit to each slit separately 36.'+rktnum+' data on macL4131 using /Users/dlwoodra/idl/rocket/36'+rktnum+' with make_megsa_spectrum.pro, note that slit 2 is row 0 to 511, and slit1 is row 512 to 1023.'
-save,file='rkt36'+rktnum+'_megsa_full_wave.sav',description,waveimg,/compress
+description=systime(0,/utc)+' Fit to each slit separately 36.'+numberstr+' data on macL4131 using /Users/dlwoodra/idl/rocket/36'+numberstr+' with make_megsa_spectrum.pro, note that slit 2 is row 0 to 511, and slit1 is row 512 to 1023.'
+save,file='rkt36'+numberstr+'_megsa_full_wave.sav',description,waveimg,/compress
 print,'---'
-print,'saved rkt36'+rktnum+'_megsa_full_wave.sav'
+print,'saved rkt36'+numberstr+'_megsa_full_wave.sav'
 print,'---'
    device,decomp=1
    plot,sp1wave,sp1out,xs=1,/ylog,yr=[100,1e8],/ys, ps=10, $

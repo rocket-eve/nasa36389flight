@@ -380,7 +380,10 @@ pro make_mb_spectra, input, tunedmask, spectra, sensitivity_in=sensitivity_in, s
 
   @config36353
   
-restore,'rkt36'+numberstr+'_megsb_full_wave.sav'
+workingdir = file_dirname(routine_filepath()) ; in code
+datapath = workingdir+'/../data/'
+
+restore, datapath + 'rkt36'+numberstr+'_megsb_full_wave.sav'
 
 wimg = waveimg
 

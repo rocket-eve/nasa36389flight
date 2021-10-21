@@ -4,8 +4,8 @@ function get_rep_image, imglist_in, no_fix=no_fix
 
 imglist = imglist_in
 if keyword_set(no_fix) eq 0 then begin
-   imglist = float(fix_vc_offset(imglist_in))
-   ; not sure if the shift by 4 pixels is necessary here
+   ;imglist = float(fix_vc_offset(imglist_in))
+   ; the shift by 4 pixels is not necessary here since we now read from the newer save file instead of Tom's file
 
    for i=0L,n_elements(imglist[0,0,*])-1 do begin
       imglist[*,*,i] = remove_vc_offset(reform(imglist[*,*,i]))
@@ -35,15 +35,18 @@ endif
 
 @config36353
 
-numberstr = numberstr ;'353' ; as in 36.353
+;numberstr = numberstr ;'353' ; as in 36.353
 
 ; SLIT 1
 linefile1='megsa1_solar_lines.dat'
 ; SLIT 2
 linefile2='megsa_solar_lines.dat'
 
-nrlmax=read_dat('reference_ma_spectrum_nrleuv_max.dat')
+workingdir = file_dirname(routine_filepath()) ; in code
+datapath = workingdir+'/../../data/'
 
+nrlmax=read_dat(workingdir+'/reference_ma_spectrum_nrleuv_max.dat')
+;stop
 window,xs=1024,ys=512
 ;if file_test('ma_corrected_imgs.sav') eq 1 then goto, do_img_restore
 
@@ -68,6 +71,10 @@ cd,workingdir
 datapath = '../../data/'
 restore,datapath+'rkt36'+numberstr+'_megsa_dark_particles_Sep_30_2021.sav'
 data = temporary(ma_no_spikes)
+
+;
+; These are already shifted for the VC offset
+;
 
 predarklist=[1,2,3,4,5]
 sunlist=[30,31,32,33,34,35,36,37,38,39,40]

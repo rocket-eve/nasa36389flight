@@ -104,7 +104,8 @@ if !version.release lt 5.4 then begin
 endif
 
 ;dllpath = getenv('see_code_l2_egs') + '/'
-dllpath = './'
+;dllpath = './'
+dllpath = file_dirname(routine_filepath())+path_sep() ; same path as this code
 
 case strlowcase(!version.os) of
     'darwin' : begin

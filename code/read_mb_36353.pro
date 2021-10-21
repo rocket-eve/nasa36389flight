@@ -388,7 +388,12 @@ restore, datapath + 'rkt36'+numberstr+'_megsb_full_wave.sav'
 wimg = waveimg
 
 ; create a mean image to get initial values
-mb = mean(input[40:50].image,dim=3)
+; choose max pixel from 97.7 at [1813,285] and a "dark" pixel as [1813,400]
+tmp = reform(input.image[1813,285] - (input.image[1813,400]>1)) ; 97.7 signal at each time
+sm = smooth(median(tmp,3),7,/edge_trunc) ; a time smoothed value of 97.7
+tmp = max(sm,maxidx)
+
+mb = mean(input[maxidx-5:maxidx+5].image,dim=3)
 mb *= tunedmask
 
 ; make a reference spectrum
@@ -419,7 +424,7 @@ for i=0,n_elements(input)-1 do begin
    heap_gc
    ;if i eq 20 then stop
 
-   if i eq 45 then begin
+   if i eq maxidx then begin
      p = image( hist_equal(congrid(input[i].image>0,1024,512)), $
       image_dimensions=[1024,512], dimension=[1024,512], rgb_table=1 )
      p.save,'megsb_'+strtrim(i,2)+'_img.png',width=1024,height=512

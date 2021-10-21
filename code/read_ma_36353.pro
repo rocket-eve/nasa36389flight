@@ -287,7 +287,14 @@ end
 ;-
 pro make_ma_spectra36353, input, spectra, zmask1, zmask2, sens1img=sens1img, sens2img=sens2img, sens1_sp=sens1_sp, sens2_sp=sens2_sp, sens1errimg=sens1errimg, sens2errimg=sens2errimg, sens1err_sp=sens1err_sp, sens2err_sp=sens2err_sp, wimg1=wimg1, wimg2=wimg2
 
-restore,'rkt36353_megsa_full_wave.sav'
+   @config36353
+
+workingdir = file_dirname(routine_filepath()) ; in code
+;cd,workingdir
+
+datapath = workingdir+'/../data/'
+
+restore,datapath+'rkt36'+numberstr+'_megsa_full_wave.sav' ; waveimg
 ; get l1 wavelength scale
 
 
@@ -298,7 +305,9 @@ wimg2=waveimg[*,0:511] ; slit 2
 ; discover the solar line max
 
 ;ma=mean(input[20:30].image,dim=3) ; 36.336/290
-tmp = reform(input.image[1628,256]) ; a 30.4 signal at each time
+; calculate difference of a 30.4-ish pixel from a dark one
+; so flatfields are not the max
+tmp = reform(input.image[1628,256]-(input.image[1628,5]>1)) ; a 30.4 signal at each time
 sm = smooth(median(tmp,3),7,/edge_trunc) ; a time smoothed value of 30.4
 tmp = max(sm,maxidx) ; peak in time
 
@@ -323,7 +332,9 @@ zmask[2043:2047,512:1023]=0
 
 ; 36.258 SPECIAL MASK SHIFT
 ; MEGS-A IS SHIFTED BY ABOUT 70 PIXELS UPWARD RELATIVE TO 36.336
-zmask = shift(zmask,0,70) ; 36.258
+;zmask = shift(zmask,0,70) ; 36.258
+zmask = shift(zmask,0,10) ; 36.353 - determine graphically
+;tvscl,hist_equal(congrid(ma*zmask,1024,512))
 
 zzmask=zmask ; for returning
 zmask1=zmask[*,512:*]
@@ -347,6 +358,7 @@ nozeroimg2 = make_nozero_img(ma2*zmask2,tol=1e-12)
 
 megsa_image_to_spectrum, nozeroimg2, sp2wave, sp2flux, imgmask=zmask2,imgwave=wimg2
 megsa_image_to_spectrum, nozeroimg1, sp1wave, sp1flux, imgmask=zmask1,imgwave=wimg1
+stop
 
 spectra_rec={time:0.d, w1:sp1wave, w2:sp2wave, sp1:sp1flux, sp2:sp2flux, sp1err:sp1flux*0., sp2err:sp2flux*0.}
 spectra=replicate(spectra_rec, n_elements(input))
@@ -663,9 +675,12 @@ orig=amegs
 ; directions are opposite because readout is from opposite sides
 ; hard coded for TLBR
 print,'INFO: moving VC to align top and bottom data'
+; why not call fix_vs_offset here?
+tmp = fix_vc_offset( amegs.image )
+amegs.image  =  tmp ;fix_vs_offset( amegs.image )
 for i=0,n_elements(amegs)-1 do begin
-   amegs[i].image[*,0:511] = shift(amegs[i].image[*,0:511],-4,0)
-   amegs[i].image[*,512:1023] = shift(amegs[i].image[*,512:1023],4,0)
+   ;;amegs[i].image[*,0:511] = shift(amegs[i].image[*,0:511],-4,0)
+   ;;amegs[i].image[*,512:1023] = shift(amegs[i].image[*,512:1023],4,0)
    ; filter wild points
    bad=where(amegs[i].image ge (2.d^14),n_bad) ; larger than max DN
   if n_bad gt 0 then amegs[i].image[bad]=0 ; fill with zero
@@ -798,13 +813,6 @@ calimg=nospikes
 
 stop
 
-stop
-
-return,-1
-end
-
-
-function temp
 
 print,'INFO: integrating to create cps spectra'
 make_ma_spectra36353, nospikes, spectra_cps, a1mask, a2mask, $
@@ -812,6 +820,9 @@ make_ma_spectra36353, nospikes, spectra_cps, a1mask, a2mask, $
   sens1img=a1sensitivity, sens1_sp=sens1_sp, sens1err_sp=sens1err_sp, $
   sens2img=a2sensitivity, sens2_sp=sens2_sp, sens2err_sp=sens2err_sp, $
   sens1errimg=a1senserr, sens2errimg=a2senserr
+
+stop
+
 
 print,'INFO: applying sensitivity maps to cps images'
 for i=0,n_elements(calimg)-1 do begin
@@ -868,11 +879,11 @@ a2w2048=total(wimg2*a2mask,2)/total(a2mask,2) ; 2048
 a2sens3600=interpol(a2sens2048,a2w2048,spectra_cps[0].w2,/nan)
 a2senserr3600=interpol(a2senserr2048,a2w2048,spectra_cps[0].w2,/nan)
 
-spectra=spectra_cps
-for i=0,n_elements(spectra)-1 do spectra[i].sp1 = (spectra[i].sp1>.1)*a1sens3600
-for i=0,n_elements(spectra)-1 do spectra[i].sp2 = (spectra[i].sp2>.1)*a2sens3600
+;spectra=spectra_cps
+;for i=0,n_elements(spectra)-1 do spectra[i].sp1 = (spectra[i].sp1>.1)*a1sens3600
+;for i=0,n_elements(spectra)-1 do spectra[i].sp2 = (spectra[i].sp2>.1)*a2sens3600
 ;; DUE TO STRANGE EFFECTS, REPLACE SPECTRA with SPECTRA_CAL 10/2/19
-stop
+;stop
 spectra = spectra_cal
 
 k=3380 ;36.8 ; 3050 is 33.5
@@ -880,9 +891,12 @@ k17=1411 ; 17.11 nm
 ;plot,ps=-4,spectra_cps.sp2[k]/mean(spectra_cps[25:30].sp2[k]),yr=[-0.05,1.2],tit='Wavelength '+strtrim(string(spectra[0].w2[k],form='(f6.3)'),2)+' nm',ys=1,xr=[7,57],xs=1
 
 ; rel signal vs image #
-msp = mean(spectra_cps[40:50].sp2,dim=2) ; mean "best" spectrum
+; choose center 10 images from solaridx
+ctr = solaridx_a[n_elements(solaridx_a)/2L]+[-5,5]
+msp = mean(spectra_cps[ctr].sp2,dim=2) ; mean "best" spectrum
 k17col = 'fe'x ; red
-plot,ps=-4,spectra_cps.sp2[k]/msp[k],yr=[-0.05,1.2],ys=1,xr=[27,68],xs=1,xtit='Image #',ytit='Relative signal'
+xr=[solaridx_a[0],solaridx_a[-1]]
+plot,ps=-4,spectra_cps.sp2[k]/msp[k],yr=[-0.05,1.2],ys=1,xr=xr,xs=1,xtit='Image #',ytit='Relative signal'
 oplot,ps=-1,spectra_cps.sp2[k17]/msp[k17],co=k17col
 oplot,!x.crange,[0,0],lines=1
 oplot,!x.crange,[1,1],lines=1
@@ -890,6 +904,8 @@ xyouts,/data,mean(!x.crange),.1,strtrim(string(spectra_cps[0].w2[k],form='(f6.3)
 xyouts,/data,mean(!x.crange),.2,strtrim(string(spectra_cps[0].w2[k17],form='(f6.3)'),2)+' nm',co=k17col
 ;oplot,[27,27],!y.crange,lines=1
 stop
+
+
 
 ; rel signal vs time
 time=spectra_cps.time
@@ -904,7 +920,7 @@ stop
 ;comment='4/1/19 Switched from 380MeV on both slits to 285 and 140 for slit 1 and 2 respectively for version 3_6'
 ;comment='4/1/19 Switched variable names in sensitivity files, version 3_7'
 ;comment='7/25/19 MA1 sensitivity from 2017 w/ 2nd order from 2010, MA2 sensitivity from 2017 w/ 2nd order from 183MeV in 2009, version 3_8'
-comment='09/04/20 Using sensitivity maps from 36.'+numberstr
+comment='Created '+systime()+' Using sensitivity maps from 36.336 for'+numberstr
 save,file='rocket36'+numberstr+'_megsa_irr.sav',/compress,spectra,spectra_cps,a1sens3600,a1senserr3600, a2sens3600,a2senserr3600, a1sensitivity, a2sensitivity, a1sens2048, a2sens2048, comment
 print,'saved rocket36'+numberstr+'_megsa_irr.sav'
 stop
@@ -912,10 +928,11 @@ stop
 ; no flight corrections, at earth
 width = 800 & height = 600
 ;solar = lindgen(21)+14L         ; indices of solar measurements (14-35)
-solar = lindgen(11)+40L ; 40-50
+;solar = lindgen(11)+40L ; 40-50
+solar = lindgen(10)+110
 a1 = mean(spectra[solar].sp1 < 1.,dim=2)
 a2 = mean(spectra[solar].sp2 < 1.,dim=2)
-w = spectra[25].w1 ; same for both
+w = spectra[solar[0]].w1 ; same for both
 gd=where(w gt 5.22 and w lt 38.39,comp=bad)
 a1[bad]=1e-8 & a2[bad]=1e-8
 gds1=where(w lt 20.5)
@@ -960,6 +977,12 @@ stop
 stop
 stop
 return,1 ; the rest is unproven testing code to try to fix slit 1 to remove higher order lines
+
+return,-1
+end
+
+
+function temp
 
 ; try to guess second order spectrum in slit 1
 model_ma1_sec_order_spec, w, a1, secorderspec

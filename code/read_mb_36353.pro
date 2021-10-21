@@ -550,7 +550,7 @@ function read_mb_36353
 
   @config36353
 
-save_filtered_img = 1 ; set to 1 to write rkt36###_megsb_dark_particles_.sav
+save_filtered_img = 0 ; set to 1 to write rkt36###_megsb_dark_particles_.sav
 ; only need to save once all the images are identified
 
 window,0,xs=10,ys=10
@@ -949,7 +949,9 @@ sensitivity_orig=sensitivity
 stop
 ; V3.9 change
 print,'INFO: restoring wavelength map'
-restore,'rkt36'+numberstr+'_megsb_full_wave.sav' ; waveimg
+workingdir = file_dirname(routine_filepath()) ; in code
+datapath = workingdir+'/../data/'
+restore,datapath+'rkt36'+numberstr+'_megsb_full_wave.sav' ; waveimg
  ; make this a function that applies correction to sensitivity
  ; to make megsb match megsa in overlap
 ; mbCor = EXP( 10.950772 + waveimg *  (-0.25827815 ))
@@ -1008,24 +1010,32 @@ w2048=total(double(waveimg)*tunedmask,2,/double)/total(tunedmask,2,/double) ; 20
 sens3700=interpol(sens2048,w2048,spectra_cps[0].w)
 senserr3700=interpol(senserr2048,w2048,spectra_cps[0].w)
 
-spectra=spectra_cps
-for i=0,n_elements(spectra)-1 do spectra[i].sp = (spectra[i].sp>.1)*sens3700
-simplespectra=spectra
+;spectra=spectra_cps
+;for i=0,n_elements(spectra)-1 do spectra[i].sp = (spectra[i].sp>.1)*sens3700
+;simplespectra=spectra
 ; DUE TO STRANGE EFFECTS, REPLACE SPECTRA with SPECTRA_CAL 10/2/19
 spectra=spectra_cal
 
+ctr0 = solaridx_b[n_elements(solaridx_b)/2L]
+ctr = ctr0 + [-5,5]
+msp = mean(spectra_cps[ctr[0]:ctr[1]].sp,dim=2) ; mean "best" spectrum
+xr=[solaridx_b[0],solaridx_b[-1]]
+
 ; atmos absorption
-plot,ps=-4,spectra.sp[3213]/mean(spectra[42:48].sp[3213]),yr=[-0.05,1.2], tit='36.'+numberstr+' Wavelength '+strtrim(string(spectra[0].w[3213],form='(f6.3)'),2)+' nm',ys=1
-oplot,ps=-1,spectra_cps.sp[3213]/mean(spectra_cps[42:48].sp[3213]),co='fe'x
+plot,ps=-4,spectra.sp[3213]/mean(spectra[ctr[0]:ctr[1]].sp[3213]),yr=[-0.05,1.2], xr=xr, tit='36.'+numberstr+' Wavelength '+strtrim(string(spectra[0].w[3213],form='(f6.3)'),2)+' nm',ys=1,xtit='Index'
+oplot,ps=-1,spectra_cps.sp[3213]/mean(spectra_cps[ctr[0]:ctr[1]].sp[3213]),co='fe'x
 oplot,!x.crange,[0,0],lines=1
 oplot,!x.crange,[1,1]*0.9,lines=1
 oplot,!x.crange,[1,1],lines=1
+oplot,[1,1]*ctr[0],!y.crange,lines=1
+oplot,[1,1]*ctr[1],!y.crange,lines=1
+axis,90,.5,/data,xrange=spectra[round(!x.crange)].time,xs=1,xtit='Time (sec)'
 stop
 
 !p.multi=[0,1,2]
 
-plot,spectra_cps[45].w,spectra_cps[45].sp,yr=[.1,1e4],/ylog, tit='36.'+numberstr,ytit='cps',xtit='Wavelength (nm)',xs=1
-plot,spectra[45].w,spectra[45].sp,yr=[5e-7,1e-2],/ylog,tit='36.'+numberstr,ytit='cps*S (W/m^2/nm)',xtit='Wavelength (nm)',xs=1
+plot,spectra_cps[ctr0].w,spectra_cps[ctr0].sp,yr=[.1,1e4],/ylog, tit='MEGS-B 36.'+numberstr,ytit='cps',xtit='Wavelength (nm)',xs=1,ps=10
+plot,spectra[ctr0].w,spectra[ctr0].sp,yr=[5e-7,1e-2],/ylog,tit='36.'+numberstr,ytit='cps*S (W/m^2/nm)',xtit='Wavelength (nm)',xs=1,ps=10
 
 save,file='rocket36'+numberstr+'_megsb_irr.sav',/compress,spectra,spectra_cps,sens2048,sens3700,senserr3700
 print,'saved rocket36'+numberstr+'_megsb_irr.sav'

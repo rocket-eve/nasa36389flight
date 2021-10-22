@@ -343,6 +343,9 @@ xyouts,6,.008,/data,'cps Uncertainty',co='fe5050'x
 
 prec = sqrt(varcps)/cps
 
+savfile = datadir+'ma_36'+numberstr+'_irr_at_1au.sav'
+save, file=savfile, wave, irradiance, relEerr, /compress
+
 stop
 return
 end

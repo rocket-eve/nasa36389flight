@@ -122,8 +122,12 @@ end
 pro compare_with_old_rocket, outdat02, max_ma_wave
 
   @config36353
+
+workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
+datadir = workingdir+'/../../data/'
+
   ; first restore the old rocket spectrum
-  restore,'rachels_36258_Sep10.sav' ; wavelength, irradiance, uncertainty
+  restore,datadir+'rachels_36258_Sep10.sav' ; wavelength, irradiance, uncertainty
   ; probably has different sampling for MA and MB
   gd=where(wavelength ge 6.0 and wavelength lt 105.0)
   olddat = dblarr(3,n_elements(wavelength[gd]))
@@ -203,9 +207,17 @@ whi=whi[*,gd]
 whiwave=reform(whi[0,*])
 whiirr =reform(whi[3,*])
 
-compare_ma_eve_36353, ma_wave, ma_irr, ma_err
+;compare_ma_eve_36353, ma_wave, ma_irr, ma_err
+restore,datadir+'ma_36'+numberstr+'_irr_at_1au.sav'
+ma_wave = temporary(wave)
+ma_irr = temporary(irradiance)
+ma_err = temporary(relEerr)
 
-compare_mb_eve_36353, mb_wave, mb_irr, mb_err
+;compare_mb_eve_36353, mb_wave, mb_irr, mb_err
+restore,datadir+'mb_36'+numberstr+'_irr_at_1au.sav'
+mb_wave = temporary(wave)
+mb_irr = temporary(irradiance)
+mb_err = temporary(relEerr)
 
 ;***
 ;***
@@ -321,7 +333,7 @@ write_dat, outdat02, filename=rktdatfile,$
   col='wavelength (nm), irradiance (W/m^2/nm), relative uncertainty (fraction)'
 print,'wrote ',rktdatfile
 
-rkt36336 = read_dat('data/rkt_36336_irradiance_v3_9_02nm.dat')
+rkt36336 = read_dat(datadir+'/rkt_36336_irradiance_v3_9_02nm.dat')
 
 ;
 ; plot two rockets

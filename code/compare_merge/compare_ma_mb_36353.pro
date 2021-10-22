@@ -19,9 +19,13 @@ end
 
 
 function get_nrleuv, rwave  
+
+  workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
+  datadir = workingdir+'/../../data/'
+
   ; for reference, Harry Warren showed an NRLEUV spectrum
   ; at 120 nm, Harry gets 1e8 ph/cm^2/sec
-  nrlph = read_dat('data/nrleuv_ref_qs_hr_v2.dat')
+  nrlph = read_dat(datadir+'nrleuv_ref_qs_hr_v2.dat')
   nrlhrwave = reform(nrlph[0,*]) / 10. ; angstroms to nm
   deltaw = rwave-shift(rwave,1) & deltaw[0] = deltaw[1]
   ;binratio = 1./(deltaw)
@@ -123,8 +127,8 @@ pro compare_with_old_rocket, outdat02, max_ma_wave
 
   @config36353
 
-workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
-datadir = workingdir+'/../../data/'
+  workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
+  datadir = workingdir+'/../../data/'
 
   ; first restore the old rocket spectrum
   restore,datadir+'rachels_36258_Sep10.sav' ; wavelength, irradiance, uncertainty
@@ -474,7 +478,7 @@ stop
 
 
 ; L2b
-d=eve_read_whole_fits('data/EVS_L2B_'+strtrim(theyd,2)+'_007_01.fit.gz')
+d=eve_read_whole_fits(datadir+'/EVS_L2B_'+strtrim(theyd,2)+'_007_01.fit.gz')
 ; avg just 15 minutes
 ;evesp=mean(d.spectrum[1140:1155].irradiance,dim=2) ; filter?
 ; 6 sample smooth, then average 15 minutes
@@ -496,7 +500,7 @@ for i=33,36,3 do begin
 
   ;oplot,ma_wave*2.,ma_irr,lines=1
 
-  xyouts,.12,.9,/norm,'EVE L2B 15-min avg V6',color='fe'x
+  xyouts,.12,.9,/norm,'EVE L2B 15-min avg V7',color='fe'x
   xyouts,.12,.85,/norm,'Rocket MEGS-A slit2 36.'+numberstr
   xyouts,.12,.8,/norm,'Rocket MEGS-B 36.'+numberstr,co='fe0000'x
 stop

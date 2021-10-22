@@ -19,6 +19,8 @@ ft7 = 101.1
 ft7a = 88.
 fap = 7.0 ; Frederiksburg
 
+sza=31.05 ; deg
+
 ;MEGS-A indices
 dark1idx_a=[81,82,84,89,90] ; remove_megsa_spikes
 ffidx_a=[133,134]

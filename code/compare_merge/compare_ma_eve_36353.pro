@@ -31,6 +31,10 @@ wdelete
 @config36353
 ;numberstr and theyd
 
+workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
+datadir = workingdir+'/../../data/'
+
+; not in data dir
 restore,'rocket36'+numberstr+'_megsa_irr.sav' ; use spectra
 
 ; recall solar motion is detected at image #38 forward
@@ -194,7 +198,7 @@ stop
 ;obj_destroy, oUrl
 
 ; L2b
-datafile = file_search('data/EVS_L2B_'+strtrim(theyd,2)+'*fit.gz',count=count)
+datafile = file_search(datadir+'EVS_L2B_'+strtrim(theyd,2)+'*fit.gz',count=count)
 ; have to use v7, no l2b v6 files available
 ;datafile = file_search(localfilenamel2b,count=count)
 
@@ -233,8 +237,8 @@ evewave = d.spectrummeta.wavelength
 ;evewave = d.spectrummeta.wavelength
 ;eveyd=d.data.yyyydoy
 ; Instead just get the merged file and look at several days around here
-url='http://lasp.colorado.edu/eve/data_access/evewebdata/products/merged/latest_EVE_L3_merged.ncdf'
-localfilename='data/latest_EVE_L3_merged.ncdf'
+url='https://lasp.colorado.edu/eve/data_access/evewebdata/products/merged/latest_EVE_L3_merged.ncdf'
+localfilename=datadir+'/latest_EVE_L3_merged.ncdf'
 
 oUrl = obj_new('IDLnetURL')
 result = oURL->Get(url=url,filename=localfilename)
@@ -242,7 +246,8 @@ obj_destroy, oUrl
 
 read_netcdf,localfilename,d
 ;eveyd=2010153
-eveyd=2013294
+;eveyd=2013294
+eveyd=2011174 ; 36.353 approx 100
 ;eveyd=2010139 ; matches 17.4-17.5 mean irradiance from EVE
 ; find this date in eve data to use instead of the one daily file
 ;stop

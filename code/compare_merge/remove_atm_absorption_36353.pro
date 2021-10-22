@@ -24,7 +24,7 @@ nwave=dims[1]
 
 ; use data from msis00e run on lind3195/timed-see
 print,'WARNING: remove_atm_absorption_36353 is using 36.336 flight profile - THIS IS WRONG'
-workingdir = file_dirname(routine_filepath()) ; in code
+workingdir = file_dirname(routine_filepath()) ; in code/compare_merge
 read_netcdf,workingdir+'/../../data/rocket_36336_atmtrans.ncdf',atm
 ;read_netcdf,'data/rocket_36'+numberstr+'_atmtrans.ncdf',atm
 ; interpolate atm trans to the same times in sptime
@@ -101,7 +101,7 @@ endfor
 p=plot(newatm.reltime,newatm.altkm,xtitle='Time since Launch (seconds)', $
   ytitle='Altitude (km)', title='NASA Rocket 36.'+numberstr,$
   xrange=[min(sptime)-20,max(sptime)+20], dimensions=[800,600],$
-  linestyle='solid' )
+  linestyle='solid', /buffer )
 for i=0L,ntime-1 do begin
   p=plot([1,1]*sptime[i],[0,1]*newatm[i].altkm,color=co[i],/overplot,linestyle='solid',thick=10)
   p=plot([1,1]*sptime[i]+2,[0,1]*newatm[i].altkm,color=co[i],/overplot,linestyle='solid',thick=10)
@@ -128,7 +128,7 @@ p = plot( wave, allcor[0,*], $
   xtitle='Wavelength (nm)', ytitle='Absorption', $
   title='NRL-MSIS00E Transmission for '+det+' Rocket 36.'+numberstr, $
   xrange=[min(wave),max(wave)], yrange=yrange, /stairstep, symbol='none', $
-  dimensions=[800,600] )
+  dimensions=[800,600], /buffer )
 
 for i=1L,ntime-1 do p = plot( wave, allcor[i,*], /overplot, /stairstep, symbol='none', color=co[i] )
 
@@ -156,7 +156,7 @@ if name eq 'megsa' then begin
       ytitle='Normalized irradiance',$
       title='36.'+numberstr+' 30.4 nm Measurement and with MSIS Correction',$
       xrange=xrange, dimensions=[800,600],$
-      linestyle='solid', symbol='circle' )
+      linestyle='solid', symbol='circle',/buffer )
     p = plot( xrange, [1,1], linestyle='dash', /overplot )
     p = plot( sptime, rnewsig, color='dark green', linestyle='solid', symbol='square', /overplot )
     for i=0L,ntime-1 do begin
@@ -166,7 +166,7 @@ if name eq 'megsa' then begin
     endfor
     p = text(/norm,.15,.6,'Measurement')
     p = text(/norm,.15,.78,'Corrected, 1-sigma spread='+strtrim(string(100.*stddev(rnewsig),form='(f6.2)'),2)+'%',color='dark green')
-stop
+;stop
     outpngfile='rktatmcor304vstime_'+name+'.png'
     p.save, outpngfile,width=800,height=600
     print,'saved '+outpngfile

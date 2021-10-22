@@ -9,6 +9,7 @@
 version = '1_0'
 numberstr = '353' ; 36.353
 theyd = 2021252 ; sept 9, 2021 17:25:00 UT
+humandatestr='Sept 9, 2021'
 au = 0.98589 ; from lisird lasp_vsop87_1au_correction_PT1M 9/9/21 17:30 UTC
 ; call this interactively to get 1-AU factor from LISIRD
 ; s=get_lisird_data(dataset='lasp_vsop87_1au_correction_PT1M',mintime='2021-09-09T17:30:00',maxtime='2021-09-09T17:35:00',/jd)

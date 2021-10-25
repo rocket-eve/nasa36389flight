@@ -18,17 +18,18 @@ The first two convert raw images from Tom's sav files into calibrated spectra.
 There are lots of steps in each.
 
 1)
-s=read_ma_36258()
+s=read_ma_36353()
 
 2)
-s=read_mb_36258()
+s=read_mb_36353()
 
 3)
 On evesci1, run the make_rkt..._atm_cor.pro procedure to capture MSIS model results.
 
 4)
-compare_ma_mb_36258
+compare_ma_mb_36353
 This one has a corresponding compare_ma_eve... and compare_mb_eve... that need
 processed EVE data.
-This merges all of the pieces together into one spectrum
+This merges all of the pieces together into one spectrum and writes the 
+spectrum to a dat file.
 

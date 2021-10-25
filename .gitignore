@@ -11,3 +11,7 @@ data/TM1/TM1_36353_Flight.log_analogs.dat
 code/rkt36353_megsa_dark_particles+Sep_30_2021.sav
 data/rkt36353_megsa_dark_particles_Sep_30_2021.sav
 data/rkt36353_megsb_dark_particles_Oct_1_2021.sav
+data/latest_EVE_L3_merged.ncdf
+data/rkt36353_megsb_dark_particles_Oct_21_2021.sav
+*/*.png
+code/rkt36353_mb_countspectrum.sav

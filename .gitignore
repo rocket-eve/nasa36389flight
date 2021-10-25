@@ -15,3 +15,8 @@ data/latest_EVE_L3_merged.ncdf
 data/rkt36353_megsb_dark_particles_Oct_21_2021.sav
 */*.png
 code/rkt36353_mb_countspectrum.sav
+code/wavelength/ma_corrected_imgs.sav
+code/wavelength/ma_sp.sav
+code/wavelength/rkt36353_countspectrum.sav
+code/wavelength/rkt36353_megsa_full_wave.sav
+code/rkt_36353_irradiance_v1_0.dat

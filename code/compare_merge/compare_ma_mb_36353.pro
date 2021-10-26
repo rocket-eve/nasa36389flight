@@ -295,8 +295,6 @@ comments = ['Date generated '+systime(),'',$
    '', $
    ' Applied calibration from SURF 2017',$
    ' Applied NRL-MSIS00E atmospheric correction, about 3% at 30.4 nm',$
-   ' Applied 1-AU adjustment '+strtrim(au,2),'',$
-   ' Solar zenith angle (deg) '+strtrim(sza,2),'',$
    '', $
    ' MEGS-A slit 1 wavelength range is 0.01 nm sampling from 6-14.93 nm', $
    ' MEGS-A slit 2 wavelength range is 0.01 nm sampling from 14.93-'+strtrim(max_ma_wave,2)+' nm', $
@@ -305,11 +303,16 @@ comments = ['Date generated '+systime(),'',$
    ' MEGS-A1 used 2017 285MeV adjusted for 3_7', $
    ' MEGS-A2 used 2017 140MeV', $
    '', $
+   '*** pointing was not updated for this flight ***', $
+   '*** flight profile from 36.353 was used, not correct for this flight ***', $
+   '', $
    'Version '+strtrim(version,2), $
    '', $
    ' Day of year='+strtrim(theyd mod 1000L,2), $
    ' Lyman-alpha composite v4=6.48e-3 W/m^2','',$
    ' F10='+strtrim(ft7,2)+', <F10>81day='+strtrim(ft7a,2), '', $
+   ' Applied 1-AU adjustment '+strtrim(au,2),'',$
+   ' Solar zenith angle (deg) '+strtrim(sza,2),'',$
    'MEGS-A Slit 1 to slit 2 crossover occurs at 14.93nm', $
    'MEGS-A Slit 2 to MEGS-B crossover occurs at '+strtrim(max_ma_wave,2)+'nm', $
       '', $

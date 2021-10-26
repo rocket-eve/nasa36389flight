@@ -11,6 +11,7 @@
 ;               WORD 9		WEST LONGITUDE	                10-7 RADIANS
 ;               WORD 10		HEIGHT ABOVE MEAN SEA LEVEL     CENTIMETERS
 ;
+FORMAT = (f12,f10,f10,f10,f10,f10,f10,f10,f10,f10)
 17020 lines:  NASA 36.353 Radar data for Sept 9 launch at 17:25:00 UT
 10 columns:  See header for definitions of data
        7700.    19590.    -7116.   265026. 10144010.-29506380.   168720.  5658308. 18556290.   388207.

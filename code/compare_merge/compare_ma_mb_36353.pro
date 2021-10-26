@@ -475,6 +475,29 @@ p=plot(rwave,rirr,xtitle='Wavelength (nm)',ytitle='Irradiance (W/m^2/nm)',$
 p=plot(nrl.wave,nrl.irr,/stairstep,co='blue',/overplot)
 p = text(/norm,.14,.9,'NRLEUV',co='blue')
 
+; should overplot the lines used for wavelength fitting here for validation
+ma1linesfull=read_dat(datadir+'../code/wavelength/megsa1_solar_lines.dat')
+ma1lines=ma1linesfull[where(ma1linesfull.cal ne 0)]
+ma2linesfull=read_dat(datadir+'../code/wavelength/megsa_solar_lines.dat')
+ma2lines=ma2linesfull[where(ma2linesfull.cal ne 0)]
+; plot ma1lines
+for i=0,n_elements(ma1lines)-1 do begin
+  waveline = ma1lines[i].wave
+  name = ma1lines[i].name
+  junk=min(abs(rwave-waveline),thisidx)
+  val = rirr[thisidx] ; rocket spectrum irradiance at theoretical line peak
+  p=plot(/overplot,[1,1]*ma1lines[i].wave, [1e-8,val])
+  t = text(/data, orientation=90, waveline, val, name+' '+strtrim(waveline,2))
+end
+; overplot ma2 lines
+for i=0,n_elements(ma2lines)-1 do begin
+  waveline = ma2lines[i].wave
+  name = ma2lines[i].name
+  junk=min(abs(rwave-waveline),thisidx)
+  val = rirr[thisidx] ; rocket spectrum irradiance at theoretical line peak
+  p=plot(/overplot,[1,1]*ma1lines[i].wave, [1e-8,val],color='red')
+  t = text(/data, orientation=90, waveline, val, name+' '+strtrim(waveline,2),color='red')
+end
 stop
 
 !p.multi=0

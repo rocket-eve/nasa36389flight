@@ -15,6 +15,9 @@ au = 0.98589 ; from lisird lasp_vsop87_1au_correction_PT1M 9/9/21 17:30 UTC
 ; s=get_lisird_data(dataset='lasp_vsop87_1au_correction_PT1M',mintime='2021-09-09T17:30:00',maxtime='2021-09-09T17:35:00',/jd)
 ; earth is far from sun, so need to increase irradiance
 
+apogeekmstr = '293.98'
+apogeesecstr = '280.05'
+
 ; used in msis00e
 ft7 = 101.1
 ft7a = 88.

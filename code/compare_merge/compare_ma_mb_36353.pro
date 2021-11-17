@@ -313,6 +313,7 @@ comments = ['Date generated '+systime(),'',$
    ' F10='+strtrim(ft7,2)+', <F10>81day='+strtrim(ft7a,2), '', $
    ' Applied 1-AU adjustment '+strtrim(au,2),'',$
    ' Solar zenith angle (deg) '+strtrim(sza,2),'',$
+   ' Apogee(km)='+apogeekmstr,' at T+'+apogeesecstr+' seconds', $
    'MEGS-A Slit 1 to slit 2 crossover occurs at 14.93nm', $
    'MEGS-A Slit 2 to MEGS-B crossover occurs at '+strtrim(max_ma_wave,2)+'nm', $
       '', $

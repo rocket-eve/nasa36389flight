@@ -5,7 +5,6 @@ function remove_atm_absorption_36353, sptime, wave, sp_in
 ;  ONLY pass in the integration that are solar measurements!!!
 
 @config36353
-;numberstr = '336'
   
 sp = sp_in ; working copy
 
@@ -22,29 +21,11 @@ endif
 ntime=dims[0]
 nwave=dims[1]
 
-; use data from msis00e run on lind3195/timed-see
-print,'WARNING: remove_atm_absorption_36353 is using 36.336 flight profile - THIS IS WRONG'
+; use data from msis00e run on timed-see
+print,'INFO: remove_atm_absorption_36353 using final 36.353 flight profile'
 workingdir = file_dirname(routine_filepath()) ; in code/compare_merge
-read_netcdf,workingdir+'/../../data/rocket_36336_atmtrans.ncdf',atm
-;read_netcdf,'data/rocket_36'+numberstr+'_atmtrans.ncdf',atm
-; interpolate atm trans to the same times in sptime
+read_netcdf,workingdir+'/../../data/rocket_36353_atmtrans.ncdf',atm
 
-; to prevent bad extrapolation prior to launch
-; prepend a duplicate fake record 10 minutes before the first one
-; in the file
-
-; looks like look_el is nto close to sza, expect sza ~ 17.5 deg
-; most rockets do a roll maneuver, see if we can find the time that happens
-
-;radarfile=file_search('data/*RADAR*36.'+numberstr+'*',count=count)
-;if count eq 1 then raw=read_dat(radarfile) else begin
-;   print,'ERROR: remove_atm_absorption_36336 - cannot locate radar data file'
-;   stop
-;endelse
-;stop
-
-
-;window,xsize=800,ysize=600
 !p.background='ffffff'x
 !P.color=0
 
@@ -68,7 +49,6 @@ co=['black','midnight blue','indigo','purple','blue violet','blue','royal blue',
 newatmrec={reltime:0.d, altkm:0.d, trans:dblarr(n_elements(atm.data.trans[*,0]))}
 newatm = replicate(newatmrec,ntime)
 
-;timestampoffset=0.0 ; are timestamps at the beginning of the integration
 timestampoffset=5.0 ; if time is start, then add 5 sec to get center
 ;timestampoffset=-5.0 ; if time is end, then subtract 5 sec to get center
 
@@ -92,9 +72,7 @@ for itime=0L,ntime-1 do begin
   ; use idx
   cor = interpol(reform(newatm[idx].trans), reform(atm.wave), wave, /lsquad)
   allcor[itime,*] = cor ; keep all corrections to make a figure
-  ;stop
   newsp[itime,*] /= reform(cor)
-  ;stop
 endfor
 
 ; altitude plot
@@ -110,7 +88,6 @@ endfor
 outpngfile='rktaltitudevstime.png'
 p.save, outpngfile,width=800,height=600
 print,'saved '+outpngfile
-;stop
 p.close
 
 

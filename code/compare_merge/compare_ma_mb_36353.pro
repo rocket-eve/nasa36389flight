@@ -304,7 +304,6 @@ comments = ['Date generated '+systime(),'',$
    ' MEGS-A2 used 2017 140MeV', $
    '', $
    '*** pointing was not updated for this flight ***', $
-   '*** flight profile from 36.353 was used, not correct for this flight ***', $
    '', $
    'Version '+strtrim(version,2), $
    '', $

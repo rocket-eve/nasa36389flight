@@ -1,10 +1,10 @@
-function remove_atm_absorption_36353, sptime, wave, sp_in
+function remove_atm_absorption_36389, sptime, wave, sp_in
 
 ; sptime is a 1d array of times relative to launch
 ; sp is a 2-d array of [time, irradiance]
 ;  ONLY pass in the integration that are solar measurements!!!
 
-@config36353
+@config36389
   
 sp = sp_in ; working copy
 

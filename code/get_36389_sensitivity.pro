@@ -1,4 +1,4 @@
-function get_36353_sensitivity, megsa1=megsa1, megsa2=megsa2, megsb=megsb
+function get_36389_sensitivity, megsa1=megsa1, megsa2=megsa2, megsb=megsb
 
   datapath = '../data/'
 

@@ -67,6 +67,7 @@ cd,workingdir
 
 datapath = '../../data/'
 restore,datapath+'rkt36'+numberstr+'_megsb_dark_particles_Oct_1_2021.sav'
+; created from read_mb_36389 (set save_filtered_img=1)
 
 megs_b = temporary(mb_no_spikes)
 

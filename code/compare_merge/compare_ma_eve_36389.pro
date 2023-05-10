@@ -22,13 +22,13 @@ end
 ;      as irradiance
 ;
 ;-
-pro compare_ma_eve_36353, wave, irradiance, relEerr
+pro compare_ma_eve_36389, wave, irradiance, relEerr
 
 window,0,xs=10,ys=10
 wdelete
 !p.color=0 & !p.background='ffffff'x & !p.charsize=1.5
 
-@config36353
+@config3639
 ;numberstr and theyd
 
 workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
@@ -39,7 +39,7 @@ restore,'rocket36'+numberstr+'_megsa_irr.sav' ; use spectra
 
 ; recall solar motion is detected at image #38 forward
 ;print,'do not use images after #50 at ',spectra[50].time
-;; Tom said
+;; Tom said - TODO revisit
 ;;  Apogee = 293.3 km at T+279.15 sec
 ;;  Good ADCS data from T+123 to T+360 sec
 ;;   T+133 sec is first time for good 10-sec integration
@@ -72,24 +72,19 @@ for i=0,n_elements(solar)-1 do begin
   spectra[solar[i]].sp1[bad] = fill_value
 endfor
 
-new1 = remove_atm_absorption_36353( spectra[solar].time, spectra[solar[0]].w1, $
+new1 = remove_atm_absorption_36389( spectra[solar].time, spectra[solar[0]].w1, $
                               spectra[solar].sp1 )
-new2 = remove_atm_absorption_36353( spectra[solar].time, spectra[solar[0]].w2, $
+new2 = remove_atm_absorption_36389( spectra[solar].time, spectra[solar[0]].w2, $
                               spectra[solar].sp2 )
 
 ;print,'ERROR: without the RADAR data no atmospheric absorption can be done properly'
 ;stop
 
+; TODO - REVISIT
 ;au = 0.96864051 ; June 18 (169) at 19:00 UTC
 ;theyd = 2013294
-;au = 1.00934 ; Oct 21, 2013
-;au = 0.9839
-;au = 0.98589 ; from lisird lasp_vsop87_1au_correction_PT1M 9/9/21 17:30 UTC
-; call this interactively to get 1-AU factor from LISIRD
-; s=get_lisird_data(dataset='lasp_vsop87_1au_correction_PT1M',mintime='2021-09-09T17:30:00',maxtime='2021-09-09T17:35:00',/jd)
-; earth is far from sun, so need to increase irradiance
 
-; au is now defined in config36353.pro
+; au is now defined in config36389.pro
 new1 /= au
 new2 /= au
 
@@ -247,6 +242,7 @@ obj_destroy, oUrl
 read_netcdf,localfilename,d
 ;eveyd=2010153
 ;eveyd=2013294
+; TODO revisit to find closest solar circumstance for MEGS-A
 eveyd=2011174 ; 36.353 approx 100
 ;eveyd=2010139 ; matches 17.4-17.5 mean irradiance from EVE
 ; find this date in eve data to use instead of the one daily file

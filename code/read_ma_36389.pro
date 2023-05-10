@@ -2,7 +2,7 @@
 ; This function removes the dark from all of the MEGS-A images in the
 ; sequence. It uses linear interpolation from a pre-solar dark and
 ; post-solar dark reference image pair. It was tuned for the 36.258
-; rocket flight in May 3, 2010 from WSMR.
+; rocket flight in May 3, 2010 from WSMR, then 36.353 2021.
 ; 
 ; :Params:
 ;    amegs: in, required, type=array of structures
@@ -12,9 +12,9 @@
 ;    image (with dark removed) and a new dark float image,
 ;    the total_counts tag is also updated to reflect real signal
 ;-
-function remove_megsa_dark_36353, amegs, output
+function remove_megsa_dark_36389, amegs, output
 
-@config36353
+@config36389
 
 ; determine a pre-observation dark and a post-observation dark
 ; goal is to linearly interpolate dark for each solar image
@@ -228,9 +228,9 @@ end
 
 ;+
 ;-
-function remove_megsa_spikes_36353, input, zzmask=zzmask
+function remove_megsa_spikes_36389, input, zzmask=zzmask
 
-@config36353
+@config36389
 
 imgdim=size(input[0].image,/dim)
 newrec={time:0.d, $
@@ -285,9 +285,9 @@ end
 
 ;+
 ;-
-pro make_ma_spectra36353, input, spectra, zmask1, zmask2, sens1img=sens1img, sens2img=sens2img, sens1_sp=sens1_sp, sens2_sp=sens2_sp, sens1errimg=sens1errimg, sens2errimg=sens2errimg, sens1err_sp=sens1err_sp, sens2err_sp=sens2err_sp, wimg1=wimg1, wimg2=wimg2
+pro make_ma_spectra36389, input, spectra, zmask1, zmask2, sens1img=sens1img, sens2img=sens2img, sens1_sp=sens1_sp, sens2_sp=sens2_sp, sens1errimg=sens1errimg, sens2errimg=sens2errimg, sens1err_sp=sens1err_sp, sens2err_sp=sens2err_sp, wimg1=wimg1, wimg2=wimg2
 
-   @config36353
+   @config36389
 
 workingdir = file_dirname(routine_filepath()) ; in code
 ;cd,workingdir
@@ -419,7 +419,7 @@ end
 ;-
 function fix_ma_corrupted_image, amegs
 
-; replace corrupted images in 36.353 (old way uses a median)
+; replace corrupted images in 36.389 (old way uses a median)
 ; (old way) amegs[95].image  = median(amegs[[94,96]].image,dim=3,/even)
 tmp = amegs[95].image
 ; top and bottom rows are OK, but middle needs to be fixed
@@ -456,11 +456,11 @@ end
 ; No parameters or keywords are used.
 ;
 ; :Examples:
-;   IDL> s = read_ma_36353()
+;   IDL> s = read_ma_36389()
 ;-
-function read_ma_36353
+function read_ma_36389
 
-@config36353
+@config36389
 
 save_filtered_img = 0 ; set to 1 to write rkt36###_megsa_dark_particles_.sav
 ; only need to save once all the images are identified
@@ -475,8 +475,8 @@ wdelete
 workingdir = file_dirname(routine_filepath())
 cd,workingdir
 
-tomsMASaveFile = workingdir+'/../data/TM2_36353_Flight_MEGS-A_adata.sav' ; contains adata
-;tomsMBSaveFile = workingdir+'/../data/TM2_36353_Flight_MEGS-B_bdata.sav' ; contains bdata
+tomsMASaveFile = workingdir+'/../data/TM2_36389_Flight_MEGS-A_adata.sav' ; contains adata
+;tomsMBSaveFile = workingdir+'/../data/TM2_36389_Flight_MEGS-B_bdata.sav' ; contains bdata
 
 ;ADATA           STRUCT    = -> <Anonymous> Array[140]
 
@@ -498,7 +498,7 @@ endif
 ;endif
 
 restore,tomsMASaveFile
-; need to create amegs array of structures to match 36.290 and 36.336
+; need to create amegs array of structures to match 36.290, 36.336, and 36.353
 rec = {time:0.d, pixel_error:0L, fid_index:0, image:fltarr(2048,1024)}
 ;tmp = replicate(rec,n_elements(images[0,0,*]))
 
@@ -557,6 +557,8 @@ for i=0,n_elements(amegs)-1 do begin
    if i eq 95 then stop
 end
 ;stop
+
+;36.389 MA TODO; revisit
 
 ;36.353 MA
 ; 0 dark has vertical spike streak and frozen curve shape from power-up residual - discard (~9 DN off from final image)
@@ -705,7 +707,7 @@ if save_filtered_img eq 1 then begin
    print,'saving intermediate data for analysis by others'
    tmp=strsplit(systime(),/extract)
    ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
-   file='../data/rkt36353_megsa_dark_particles_'+ts+'.sav'
+   file='../data/rkt36389_megsa_dark_particles_'+ts+'.sav'
    rec={time:0., image:fltarr(2048,1024)}
    gd=where(nospikes.time gt -60,n_gd)
    ma_no_spikes = replicate(rec,n_gd)
@@ -743,7 +745,7 @@ old1_sensitivity_error = old1*0.1 ;10% sensitivity_error
 
 ; new code 8/19 can remove the reverse
 print,'INFO: getting slit 1 sensitivity'
-a1sens = get_36353_sensitivity( /megsa1 )
+a1sens = get_36389_sensitivity( /megsa1 )
 a1sensitivity = a1sens[*,512:*] ; cut off
 
 
@@ -792,7 +794,7 @@ old2_sensitivity_error = old2 * 0.1 ; 10%
 
 
 print,'INFO: getting slit 2 sensitivity'
-new2 = get_36353_sensitivity(/megsa2)
+new2 = get_36389_sensitivity(/megsa2)
 
 ; filter
 ;;bad=where(new2 lt 1e-8 or new2 gt 1e-2,n_bad)
@@ -815,7 +817,7 @@ stop
 
 
 print,'INFO: integrating to create cps spectra'
-make_ma_spectra36353, nospikes, spectra_cps, a1mask, a2mask, $
+make_ma_spectra36389, nospikes, spectra_cps, a1mask, a2mask, $
   wimg1=wimg1, wimg2=wimg2, $
   sens1img=a1sensitivity, sens1_sp=sens1_sp, sens1err_sp=sens1err_sp, $
   sens2img=a2sensitivity, sens2_sp=sens2_sp, sens2err_sp=sens2err_sp, $
@@ -830,7 +832,7 @@ for i=0,n_elements(calimg)-1 do begin
    calimg[i].image[*,0:511] = calimg[i].image[*,0:511] * a2sensitivity
 endfor
 print,'INFO: integrating to create calibrated spectra'
-make_ma_spectra36353, calimg, spectra_cal, a1mask, a2mask, $
+make_ma_spectra36389, calimg, spectra_cal, a1mask, a2mask, $
   wimg1=wimg1, wimg2=wimg2
 
 a1sens2048=total(a1sensitivity*a1mask,2)/total(a1mask,2,/double) ; 2048

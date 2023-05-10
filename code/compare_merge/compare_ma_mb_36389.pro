@@ -68,7 +68,7 @@ end
 
 function test_get_nrleuv
 
-  @config36353
+  @config36389
   ;numberstr = '290'
   ;version='1_0'
   ;theyd = 2013294 ; oct 21
@@ -125,7 +125,7 @@ end
 
 pro compare_with_old_rocket, outdat02, max_ma_wave
 
-  @config36353
+  @config36389
 
   workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
   datadir = workingdir+'/../../data/'
@@ -191,9 +191,9 @@ pro compare_with_old_rocket, outdat02, max_ma_wave
 end
 
 
-pro compare_ma_mb_36353
+pro compare_ma_mb_36389
 
-@config36353
+@config36389
   
 ;;version='3_8'
 ;version='1_0'

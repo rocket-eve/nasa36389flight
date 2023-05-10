@@ -3,7 +3,7 @@
 ; sequence. It uses linear interpolation from a pre-solar dark and
 ; post-solar dark reference image pair. It was tuned for the 36.290
 ; rocket flight in Oct 21 (294), 2013 from WSMR.
-; Modified for 36.258 then 36.353
+; Modified for 36.258, 36.353, then 36.389
 ; 
 ; :Params:
 ;    bmegs: in, required, type=array of structures
@@ -11,9 +11,9 @@
 ; :Returns:
 ;    Status is 0 if good, non-zero if bad
 ;-
-function remove_megsb_dark_36353, bmegs, output, tunedmask
+function remove_megsb_dark_36389, bmegs, output, tunedmask
 
-  @config36353
+  @config36389
   
 ; determine a pre-observation dark and a post-observation dark
 ; goal is to linearly interpolate dark for each solar image
@@ -31,6 +31,8 @@ darkmask[*,0] = 0 & darkmask[*,1023]=0 ; top/bottom rows
 ; define good image indices for dark images 
 ; good images do not show noise stripes across the width
 ; of the CCD
+
+; 36.389 - MEGS-B TODO - revisit
 
 ; 36.290 - MEGS-B
 ; 0-2 dark
@@ -323,9 +325,9 @@ end
 
 ;+
 ;-
-function remove_megsb_spikes_36353, input, output
+function remove_megsb_spikes_36389, input, output
 
-@config36353
+@config36389
 
 imgdim=size(input[0].image,/dim)
 
@@ -337,6 +339,8 @@ output.image = input.image
 ;lo=11 ; 13 and 14 have RF noise
 ;hi=48 ; MA stops on 37 (34,35 show RF noise)
 ;identify types
+
+; 36.389 - MEGS-B TODO revisit
 
 ; 36.290 - MEGS-B
 ; 0-2 dark
@@ -378,7 +382,7 @@ end
 
 pro make_mb_spectra, input, tunedmask, spectra, sensitivity_in=sensitivity_in, sens_sp=sens_sp, waveimg=waveimg, sensitivity_error_in=sensitivity_error_in, sens_err_sp=sens_err_sp
 
-  @config36353
+  @config36389
   
 workingdir = file_dirname(routine_filepath()) ; in code
 datapath = workingdir+'/../data/'
@@ -548,12 +552,12 @@ end
 ; Custom rocket flight analysis for MEGS-B only
 ;
 ; :Examples:
-;   IDL> s = read_mb_36336()
+;   IDL> s = read_mb_36389()
 ;
 ;-
-function read_mb_36353
+function read_mb_36389
 
-  @config36353
+  @config36389
 
 save_filtered_img = 0 ; set to 1 to write rkt36###_megsb_dark_particles_.sav
 ; only need to save once all the images are identified
@@ -568,8 +572,14 @@ wdelete
 workingdir = file_dirname(routine_filepath())
 cd,workingdir
 
-;tomsMASaveFile = workingdir+'/../data/TM2_36353_Flight_MEGS-A_adata.sav' ; contains adata
-tomsMBSaveFile = workingdir+'/../data/TM2_36353_Flight_MEGS-B_bdata.sav' ; contains bdata
+;tomsMASaveFile = workingdir+'/../data/TM2_36389_Flight_MEGS-A_adata.sav' ; contains adata
+tomsMBSaveFile = workingdir+'/../data/TM2_36389_Flight_MEGS-B_bdata.sav' ; contains bdata
+
+;
+; ***
+; Probably need to chop down input data to reduce memory usage, expect it to crash IDL
+; ***
+;
 
 ;BDATA           STRUCT    = -> <Anonymous> Array[140]
 ;IDL> help,bdata,/str
@@ -597,9 +607,10 @@ tmp.pixel_error = bdata.pixel_error
 tmp.fid_index = bdata.fid_index
 tmp.image = float(bdata.image)
 
-; need data to be called bmegs, fix corrupted images, too
-print,'INFO: calling fix_mb_corrupted_image'
-bmegs = fix_mb_corrupted_image(tmp)
+;; need data to be called bmegs, fix corrupted images, too
+;;print,'INFO: calling fix_mb_corrupted_image'
+;;bmegs = fix_mb_corrupted_image(tmp)
+bmegs=tmp
 
 ;stop
 

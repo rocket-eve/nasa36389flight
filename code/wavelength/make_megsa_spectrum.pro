@@ -33,9 +33,7 @@ if !p.color ne 0 then begin
    !p.color=0
 endif
 
-@config36353
-
-;numberstr = numberstr ;'353' ; as in 36.353
+@config36389
 
 ; SLIT 1
 linefile1='megsa1_solar_lines.dat'
@@ -288,7 +286,7 @@ stop
 ;waveimg2 = waveimg
 ;stop
 
-description=systime(0,/utc)+' Fit to each slit separately 36.'+numberstr+' data on macL4131 using /Users/dlwoodra/idl/rocket/36'+numberstr+' with make_megsa_spectrum.pro, note that slit 2 is row 0 to 511, and slit1 is row 512 to 1023.'
+description=systime(0,/utc)+' Fit to each slit separately 36.'+numberstr+' data on '+getenv('HOST')+' using /Users/dlwoodra/idl/rocket/36'+numberstr+' with make_megsa_spectrum.pro, note that slit 2 is row 0 to 511, and slit1 is row 512 to 1023.'
 save,file='rkt36'+numberstr+'_megsa_full_wave.sav',description,waveimg,/compress
 print,'---'
 print,'saved rkt36'+numberstr+'_megsa_full_wave.sav'

@@ -1,29 +1,32 @@
-; include file for 36.353
+; include file for 36.389
 
-; to use, specify as @config36353 in the code
+; to use, specify as @config36389 in the code
 ; in IDL these lines are then executed in place in that code the same as if it was typed into there
 ; include files ("batch" files in IDL) cannot support loops or any multiline commands or code blocks
 
 ; define constants used all over the place
 
 version = '1_0'
-numberstr = '353' ; 36.353
-theyd = 2021252 ; sept 9, 2021 17:25:00 UT
-humandatestr='Sept 9, 2021'
-au = 0.98589 ; from lisird lasp_vsop87_1au_correction_PT1M 9/9/21 17:30 UTC
+numberstr = '389' ; 36.389
+theyd = 2023123 ; may 3, 2023 18:30:00 UT
+humandatestr='May 3, 2023'
+au = 1.00781 ; from Tom Woods, could get from lisird lasp_vsop87_1au_correction_PT1M
 ; call this interactively to get 1-AU factor from LISIRD
 ; s=get_lisird_data(dataset='lasp_vsop87_1au_correction_PT1M',mintime='2021-09-09T17:30:00',maxtime='2021-09-09T17:35:00',/jd)
 ; earth is far from sun, so need to increase irradiance
 
-apogeekmstr = '293.98'
-apogeesecstr = '280.05'
+apogeekmstr = '293.98' ; revisit
+apogeesecstr = '280.05' ; check (279?)
 
 ; used in msis00e
-ft7 = 101.1
-ft7a = 88.
+ft7 = 161.5 ; adjusted
+ft7a = 88. ; TODO - revisit ft7a (81-day avg) when known
 fap = 7.0 ; Frederiksburg
 
-sza=31.05 ; deg
+sza=31.05 ; deg TODO: revisit
+
+; 90 deg roll at T+370s
+; solar observing T+150-470s
 
 ;MEGS-A indices
 dark1idx_a=[81,82,84,89,90] ; remove_megsa_spikes

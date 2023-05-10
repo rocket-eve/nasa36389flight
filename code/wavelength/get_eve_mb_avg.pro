@@ -16,7 +16,10 @@ pro get_eve_mb_avg, sp
 ;d = eve_read_whole_fits('MB__L1_2018169_19_006_02.fit.gz')
 
 ; 36.353
-d = eve_read_whole_fits('MB__L1_2021252_17_007_01.fit.gz')
+;d = eve_read_whole_fits('MB__L1_2021252_17_007_01.fit.gz')
+
+; 36.389
+d = eve_read_whole_fits('MB__L1_2023123_18_007_01.fit.gz')
 
 dd = d.hdr001 ; data
 

@@ -34,7 +34,7 @@ if !p.color ne 0 then begin
 endif
 co=independent_color()
 
-@config36353
+@config36389
 
 linefile='megsb_solar_lines.dat'
 

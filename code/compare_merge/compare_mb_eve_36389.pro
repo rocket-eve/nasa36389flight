@@ -1,10 +1,10 @@
-pro compare_mb_eve_36353, wave, irradiance, relEerr
+pro compare_mb_eve_36389, wave, irradiance, relEerr
 
 window,0,xs=10,ys=10
 wdelete
 !p.color=0 & !p.background='ffffff'x & !p.charsize=1.5
 
-@config36353
+@config36389
 
 workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
 datadir = workingdir+'/../../data/'

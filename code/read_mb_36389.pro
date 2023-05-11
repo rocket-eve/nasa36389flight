@@ -659,8 +659,8 @@ for i=0,n_elements(bmegs)-1 do begin
       title='vertical mean difference of #'+strtrim(i,2)+'-#'+strtrim(previdx,2),xtit='row',ytitle='mean DN/row'
 ;   device,decomp=1
    oplot,total(deltaimg[*,512:1023],2)/512.,co='fe'x
-   if i eq 95 then stop
-   stop
+   ;if i eq 95 then stop
+   ;stop
 end
 ;stop
 
@@ -789,7 +789,9 @@ print,'INFO: figuring out MEGS_B tunedmask'
 restore,'../data/megsb_default_mask.sav' ; larger than necessary mask
 zmask = default_mask
 print,'INFO: default mask'
-tvscl,hist_equal(congrid(zmask * bmegs[110].image,xsize,ysize))
+refsunidx = solaridx_b[10] ; pick a reference solar image
+wset,0
+tvscl,hist_equal(congrid(zmask * bmegs[refsunidx].image,xsize,ysize))
 wait,1
 ;stop
 ; adjust for 36.290 to get close to "tuned"
@@ -800,9 +802,9 @@ zmask=topmask and botmask ; only use where both are good
 ; clip long wavelength edge
 zmask[2043:*,*]=0
 print,'INFO: adjsted default mask to prevent vertical clipping'
-tvscl,hist_equal(congrid(zmask * bmegs[110].image,xsize,ysize))
+tvscl,hist_equal(congrid(zmask * bmegs[refsunidx].image,xsize,ysize))
 wait,1
-;stop
+stop
 
 ; apply mask to all images
 ; remove rough dark to get tuned mask

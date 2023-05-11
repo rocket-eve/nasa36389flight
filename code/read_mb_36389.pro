@@ -573,7 +573,7 @@ workingdir = file_dirname(routine_filepath())
 cd,workingdir
 
 ;tomsMASaveFile = workingdir+'/../data/TM2_36389_Flight_MEGS-A_adata.sav' ; contains adata
-tomsMBSaveFile = workingdir+'/../data/TM2_36389_Flight_MEGS-B_bdata.sav' ; contains bdata
+tomsMBSaveFile = workingdir+'/../data/TM2_36'+numberstr+'_MEGSB_bdata.sav' ; contains bdata
 
 ;
 ; ***
@@ -639,7 +639,7 @@ for i=0,n_elements(bmegs)-1 do begin
    previdx = (i + n_elements(bmegs) - 1) mod n_elements(bmegs) 
    deltaimg = float(bmegs[i].image) - float(bmegs[previdx].image)
    !p.multi=0
-   plot,deltaimg,title='index #'+strtrim(i,2)+'-#'+strtrim(previdx,2)+' T='+strtrim(bmegs[i].time,2),yr=median(deltaimg)+[-1.,1.]*6.*stddev(deltaimg),ytit='Difference (DN)
+   plot,deltaimg,title='index #'+strtrim(i,2)+'-#'+strtrim(previdx,2)+' T='+strtrim(bmegs[i].time,2),yr=median(deltaimg)+[-1.,1.]*6.*stddev(deltaimg),ytit='Difference (DN)'
    wset,2
    !p.multi=[0,1,2]
    plot,total(deltaimg,1)/2048.,ystyle=1,xstyle=1, $
@@ -848,12 +848,12 @@ orig = result ; keep a copy for testing
 
 print,'INFO: removing dark'
 ; remove dark
-status=remove_megsb_dark_36353(bmegs, result, tunedmask)
+status=remove_megsb_dark_36389(bmegs, result, tunedmask)
 nodarkimg=result
 
 ; now do particle filtering
 print,'INFO: particle filtering'
-status=remove_megsb_spikes_36353(nodarkimg, result)
+status=remove_megsb_spikes_36389(nodarkimg, result)
 nospikes=result
 
 ; save these results for Phil and the others
@@ -861,7 +861,7 @@ if save_filtered_img eq 1 then begin
    print,'saving intermediate data for analysis by others'
    tmp=strsplit(systime(),/extract)
    ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
-   file='../data/rkt36353_megsb_dark_particles_'+ts+'.sav'
+   file='../data/rkt36'+numberstr+'_megsb_dark_particles_'+ts+'.sav'
    rec={time:0., image:fltarr(2048,1024)}
    gd=where(nospikes.time gt -60,n_gd)
    mb_no_spikes = replicate(rec,n_gd)
@@ -906,8 +906,8 @@ stop
 
 ; for 36.290 (not used)
 ;sensfile='data/sensitivity_MEGSB_fw0_380MeV_2013.sav' ; scaled to A2 in overlap?
-print,'INFO: get_36353_sensitivity'
-sensitivity = get_36353_sensitivity(/megsb)
+print,'INFO: get_36'+numberstr+'_sensitivity'
+sensitivity = get_36389_sensitivity(/megsb)
 
 ; from Brian 9/13/19 v39 rejected
 ;sensfile='data/sensitivity_MEGSB_second_order_2017.sav' ; 

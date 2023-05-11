@@ -520,6 +520,16 @@ function fix_mb_corrupted_image, bmegs
 ; if special filtering is not known then just return
 ;return,bmegs
 
+  ; 36.389 special
+  ; index 0 is partial, replace missing values with median of 1,2,3
+  tmp = bmegs[0].image
+  m123 = median(bmegs[1:3].image, dim=3)
+  bad=where(abs(tmp-m123) gt 10,n_bad)
+  if n_bad gt 0 then bmegs[0].image[bad] = m123[bad]
+
+  return,bmegs
+  
+  stop
 ; replace corrupted images in 36.353 (old way uses a median)
 ; (old way) bmegs[95].image  = median(bmegs[[94,96]].image,dim=3,/even)
 tmp = bmegs[95].image
@@ -607,19 +617,12 @@ tmp.pixel_error = bdata.pixel_error
 tmp.fid_index = bdata.fid_index
 tmp.image = float(bdata.image) ; changing type to float
 
-;; need data to be called bmegs, fix corrupted images, too
-;;print,'INFO: calling fix_mb_corrupted_image'
-;;bmegs = fix_mb_corrupted_image(tmp)
+; need data to be called bmegs, fix corrupted images, too
+print,'INFO: calling fix_mb_corrupted_image'
+bmegs = fix_mb_corrupted_image(tmp)
 
-; until we know there are corrupted images, use all of them
-bmegs=temporary(tmp)
-
-;stop
-
-
-reltime = bmegs.time
-
-bmegs.time = reform(reltime)
+tmp = !NULL ; free this memory
+bdata = !NULL
 heap_gc
 
 ; look at each image, and the difference with the previous one
@@ -627,13 +630,18 @@ xsize=1920 & ysize=1024
 window,0,xs=xsize,ys=ysize
 window,1,xs=800,ys=400
 window,2,xs=800,ys=400
+window,3,xs=1024,ys=512
 
 for i=0,n_elements(bmegs)-1 do begin
    ;if bmegs[i].time lt 900 then continue ; this would skip all images
-   wset,0
+   wset,3 ; quicklook at each image to look for missing data
+   tvscl,congrid(bmegs[i].image mod 256,1024,512)
+
    tmpimg = float(bmegs[i].image)
    tmpimg[*,0:511] -= median(tmpimg[0:3,0:511])
    tmpimg[*,512:1023] -= median(tmpimg[2043:2047,512:1023])
+
+   wset,0
    ;tvscl,hist_equal(congrid(bmegs[i].image,xsize,ysize))
    tvscl,hist_equal(congrid(tmpimg,xsize,ysize))
 ;   device,decomp=0

@@ -605,12 +605,14 @@ tmp = replicate(rec,n_elements(bdata))
 tmp.time = bdata.time
 tmp.pixel_error = bdata.pixel_error
 tmp.fid_index = bdata.fid_index
-tmp.image = float(bdata.image)
+tmp.image = float(bdata.image) ; changing type to float
 
 ;; need data to be called bmegs, fix corrupted images, too
 ;;print,'INFO: calling fix_mb_corrupted_image'
 ;;bmegs = fix_mb_corrupted_image(tmp)
-bmegs=tmp
+
+; until we know there are corrupted images, use all of them
+bmegs=temporary(tmp)
 
 ;stop
 
@@ -623,10 +625,11 @@ heap_gc
 ; look at each image, and the difference with the previous one
 xsize=1920 & ysize=1024
 window,0,xs=xsize,ys=ysize
-;window,1,xs=800,ys=400
-;window,2,xs=800,ys=400
+window,1,xs=800,ys=400
+window,2,xs=800,ys=400
+
 for i=0,n_elements(bmegs)-1 do begin
-   if bmegs[i].time lt 900 then continue
+   ;if bmegs[i].time lt 900 then continue ; this would skip all images
    wset,0
    tmpimg = float(bmegs[i].image)
    tmpimg[*,0:511] -= median(tmpimg[0:3,0:511])

@@ -71,10 +71,21 @@ pro megsb_tuned_mask, imgfull_in, imgmask, tunedmask
 
 ;rt=[763.023, -0.295935, -1.78369e-5]
 ;bt=[899.382, -0.287142, -1.56213e-5]
-; orig
-rt=[781.796, -0.276607, -2.49433e-05]
-bt=[928.212, -0.265820, -2.52693e-05]
-goto, rt_bt_known
+
+;; orig
+;rt=[781.796, -0.276607, -2.49433e-05]
+;bt=[928.212, -0.265820, -2.52693e-05]
+
+  ; DLW hand examination of line edges from 36.389, 5/17/23
+  ; 33.5, 58.4, 102.5
+  lowerx = [141,805,1946]
+  lowery = [748,537,147]
+  upperx = [132,802,1950]
+  uppery = [891,694,316]
+  rt = poly_fit(lowerx, lowery, 2)
+  bt = poly_fit(upperx, uppery, 2)
+  
+  goto, rt_bt_known
 
 
 ;
@@ -82,7 +93,7 @@ goto, rt_bt_known
 ;
 
 ;offset = 0.5
-offset = 0.25
+offset = 0.004
 imgfull = imgfull_in*imgmask>offset<1
 imgfull -= offset
 
@@ -158,6 +169,7 @@ bt=poly_fit(xctr[gd],botedge[gd],poly_order)
 
 print,'megsb_tuned_mask - rt = ',rt
 print,'megsb_tuned_mask - bt = ',bt
+stop
 
 ;
 ; FLIGHT CODE
@@ -168,18 +180,11 @@ topcurve = poly(tmpx,rt)
 botcurve = poly(tmpx,bt)
 tunedmask=bytarr(n_elements(imgmask[*,0]),n_elements(imgmask[0,*]))
 
-;
-; 06/12/08 DLW narrow the tuned mask by one pixel on top and bot
-;              (top/bot definition is upside-down, so bot>top always
-;
-;botcurve -= 1
-;topcurve += 1
-
-;
-; 03/27/10 DLW Expand the tuned mask to ensure flux is not lost at long wavelengths
-;
-botcurve += 1
-topcurve -= 1
+;;
+;; 03/27/10 DLW Expand the tuned mask to ensure flux is not lost at long wavelengths
+;;
+;botcurve += 1
+;topcurve -= 1
 
 
 ; enforce valid ranges only!

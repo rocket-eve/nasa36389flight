@@ -21,7 +21,7 @@ apogeesecstr = '280.05' ; check (279?)
 ; used in msis00e
 ft7 = 161.5 ; adjusted
 ft7a = 88. ; TODO - revisit ft7a (81-day avg) when known
-fap = 7.0 ; Frederiksburg
+fap = 2.0 ; Potsdam - TODO - revisit (https://kp.gfz-potsdam.de/en/data)
 
 sza=31.05 ; deg TODO: revisit
 
@@ -41,7 +41,8 @@ dark2idx_a=[130,131,136,137]
 ;dark2idx_b=[130,138,139]
 
 ;MEGS-B indices for 36.389
-dark1idx_b=[1,2,3,7,8,10,11,14,15,17,18,22,23,24,25,29,30,31,32,33,34,35,36,37,38,39,43,44,45,46,47,48,52,54,55,61,62,63,64,68,69,70,71,72,76,77,78,87,88,89,93,94,95,96,101,102,103,104,105,110,111,117,118,119,122,126,127,128,129,130,134,135,136,137,138,141,142,143,144,145,146,150,151,152,153,154,158,159,160,161,173,174,175,176,181,182,183,184,195,196,197,198,202,203,204,205,206,207,210,211,212,213,215,216,217,218] ; needs to be divisible by 3?
+dark1idx_b=[2,3,6,7,8,10,11,14,15,16,17,18,21,22,23,24,25,29,30,31,32,33,36,37,38,39,40,43,44,45,46,47,48,52,54,55,61,62,63,64,68,69,70,71,72,76,77,78,84,87,88,89,93,94,95,96,101,102,103,104,105,110,111,117,118,119,122,126,127,128,129,130,134,135,136,137,138,142,143,144,145,146,150,151,152,153,154,158,159,160,161,173,174,175,176,181,182,183,184,195,196,197,198,202,203,204,205,206,210,211,212,213,215,216,217,218] ; needs to be divisible by 3?
+; 212, 213, 216 are suspect
 
 ffidx_b=[187,188,189,190,260,261]
 
@@ -52,20 +53,21 @@ solaridx_b=[220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,
            246,247,248,249,250,251,252,253,254,255]
 ; for 90deg only use 248-255
 
-;59 corrupted
-;79 change T=-1298
-;85 change
-;108 change T=-1008
-;112 change T=-968
+;59 corrupted/data loss
+;79 change T=-1298, corruption
+;85 change, corruption
+;108 change T=-1008, corruption
+;112 change T=-968, corruption
 ;113 corrupted/shifted
 ;120 corrupted/shifted upsidedown
 ;163 change to reverse clock partial T=-458
-;167 RC off
-;169 partial TP
+;167 RC off partial dark
+;169 partial TP and dark
 ;172 TP off partial
 ;186 partial FF
 ;191 FF off
 ; launch at 209
+; post launch dark jumps around from image to image
 ;214 partial FF
 ; 219 first partial solar spectrum moving
 ; 246 90deg roll start
@@ -73,3 +75,6 @@ solaridx_b=[220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,
 ; 259 partial ff
 ; 262 partial ff
 
+; strong temperature dependent pixel at [1772,510] (and vertical)
+; and at [1900,510] (and vertical)
+; and [1591,510] (and vertical) [1592,510] (and vertical)

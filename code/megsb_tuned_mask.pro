@@ -84,6 +84,9 @@ pro megsb_tuned_mask, imgfull_in, imgmask, tunedmask
   uppery = [891,694,316]
   rt = poly_fit(lowerx, lowery, 2)
   bt = poly_fit(upperx, uppery, 2)
+
+  print,'INFO: megsb_tuned_mask - fit rt = ',rt
+  print,'INFO: megsb_tuned_mask - fit bt = ',bt
   
   goto, rt_bt_known
 
@@ -196,6 +199,14 @@ if n_x gt 0 then stop
 for i=0L,2047 do begin
     tunedmask[i,topcurve[i]:botcurve[i]]=1
 endfor
+
+@config36389
+codedir = file_dirname(routine_filepath())
+savfile = codedir+'/../data/megsb_tuned_mask_36'+numberstr+'.sav' ; contains tunedmask
+if file_test(savfile) eq 0 then begin
+   description=['Date:'+systime(),'Hand-tuned mask for rocket flight 36.'+numberstr+' from WSMR on '+humandatestr]
+   save,file=savfile,tunedmask,description,rt,bt,/compress
+endif
 
 return
 end

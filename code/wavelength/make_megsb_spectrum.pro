@@ -66,28 +66,27 @@ workingdir = file_dirname(routine_filepath()) ; in wavelength dir
 cd,workingdir
 
 datapath = '../../data/'
-restore,datapath+'rkt36'+numberstr+'_megsb_dark_particles_Oct_1_2021.sav'
+restore,datapath+'rkt36'+numberstr+'_megsb_dark_particles_.sav'
 ; created from read_mb_36389 (set save_filtered_img=1)
 
 megs_b = temporary(mb_no_spikes)
 
-;stop
-; ff at 8,9,10,11,12, 36, 80,81,82,83
-;predarklist = [0,1,2,3,4,5,6,7, 13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,32, 41,42]
-predarklist=[1,2,3,4,5]
-; first solar image is 43
-;sunlist=[45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75]
-;sunlist=[13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37]
-sunlist=[30,31,32,33,34,35,36,37,38,39,40]
 
-; get a representative image
-predark = get_mb_rep_image(megs_b[predarklist].image)
-sun     = get_mb_rep_image(megs_b[sunlist].image)
+predarklist=dark1idx_b ; [1,2,3,4,5]
 
-images = (sun - predark ) ;> 1e-2
+sunlist = solaridx_b ;[30,31,32,33,34,35,36,37,38,39,40]
+
+;; get a representative image
+;predark = get_mb_rep_image(megs_b[predarklist].image)
+;sun     = get_mb_rep_image(megs_b[sunlist].image)
+
+;images = (sun - predark ) ;> 1e-2
 ; good enough for finding a wavelength scale
 ;stop,'ready to save images to the file'
 
+images = median(megs_b[0:n_elements(megs_b)/2].image,dim=3) ; images is one image [ 2048,1024]
+
+print,'INFO: make_megsb_spectrum - saving images to file'
 save,file='mb_corrected_imgs.sav',/compress, images ; contains scalar images variable
 
 ;;;
@@ -173,16 +172,16 @@ mb_orig=mb ;keep original just in case
 
 megsb_tuned_mask, mb, zmask, zzmask
 
-;add 5 pixels to each side, just for safety
- ; for 36.318, trim it down
-for i=0L,2047 do begin
-   gd=where(zzmask[i,*] eq 1,n_gd)
-   if n_gd gt 1 then begin
-      mmin=min(gd,max=mmax)
-      ;zzmask[i, (mmin[0]-5) : (mmax[0]+5)] = 1b ; both sides
-      zzmask[i, (mmin[0]+1) : (mmax[0]-1)] = 1b ;trim oen more off each side
-   endif
-endfor
+;;add 5 pixels to each side, just for safety
+; ; for 36.318, trim it down
+;for i=0L,2047 do begin
+;   gd=where(zzmask[i,*] eq 1,n_gd)
+;   if n_gd gt 1 then begin
+;      mmin=min(gd,max=mmax)
+;      ;zzmask[i, (mmin[0]-5) : (mmax[0]+5)] = 1b ; both sides
+;      zzmask[i, (mmin[0]+1) : (mmax[0]-1)] = 1b ;trim oen more off each side
+;   endif
+;endfor
 zmask=zzmask
 ;stop
 
@@ -224,8 +223,13 @@ waveimg = make_megsb_stripe(/undo, thisimgwave, zmask) ; convert back up to 2048
 plot,spwave,spflux>1,xs=1,ys=1,/ylog,xtit='Wavelength (nm)',ytit='counts/sec/slit height'
 
 print,'saving rocket reference wavelengths'
-description=systime(0,/utc)+' Fit from Raw TLM image file on macL4131 /Users/dlwoodra/idl/rocket/36'+numberstr+'/ with megsb_image_to_spectrum.pro'
-save,file='rkt36'+numberstr+'_megsb_full_wave.sav',description,waveimg,/compress
+description=systime(0,/utc)+' Fit from Raw TLM image file on '+getenv('HOST')+' /Users/dlwoodra/idl/rocket/36'+numberstr+'/ with megsb_image_to_spectrum.pro'
+
+workingdir = file_dirname(routine_filepath()) ; in wavelength dir
+datapath = file_dirname(file_dirname(workingdir))+'/data/'
+savfile = datapath + 'rkt36'+numberstr+'_megsb_full_wave.sav'
+
+save,file=savfile,description,waveimg,/compress
 stop
 stop
 stop

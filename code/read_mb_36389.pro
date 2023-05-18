@@ -336,8 +336,7 @@ output.image = input.image
 ; first cut is to remove jumps up pairwise, comparing to next image
 ; if current image is larger than next image by sqrt(DN) then replace with next
 ; only work on "good" solar data
-;lo=11 ; 13 and 14 have RF noise
-;hi=48 ; MA stops on 37 (34,35 show RF noise)
+
 ;identify types
 
 ; 36.389 - MEGS-B TODO revisit
@@ -376,7 +375,7 @@ mb_filterimgspike, ffidx, output ;, /heavy ; need at least 3 to run /heavy
 mb_filterimgspike, solaridx, output
 mb_filterimgspike, dark2idx, output, /heavy
 
-return,output
+return,0 ;output
 end
 
 
@@ -814,8 +813,14 @@ skip_detailed_image_plots:
   ;topy=[835,806,789]
   ;botx=[1683,1874,1992]
   ;boty=[685,647,631]
+  ; relative counts [1, 5.4, 3.9] (does not account for line curve)
+  ; relative counts for 1st order 46.5, 49.9, 52.1 [1, 4.4, 3.2]
   
-  print,'INFO: tuned tunedmask to 36.336'
+  print,'INFO: tuned tunedmask to 36.389'
+  ; mask is the same for pre-roll and post-roll
+  ; some long wavelength shifting occurs for 102.5 and O VI lines around it post-roll
+  xsize=1024 & ysize=xsize/2L
+  window,0,xsize=xsize,ysize=ysize,title='0'
   tvscl,hist_equal(congrid((tmpimg*tunedmask)>0,xsize,ysize))
   wait,1
   stop
@@ -831,20 +836,20 @@ skip_detailed_image_plots:
 
   ; tunedmask is pretty good for 36.258, too
 
-  ; hand tune to 36.353
-  tunedmasklow = shift(tunedmask,0,1)
-  tunedmaskhigh = shift(tunedmask,0,-3)
-  tunedmask = tunedmasklow OR tunedmaskhigh
+  ;; hand tune to 36.353
+  ;tunedmasklow = shift(tunedmask,0,1)
+  ;tunedmaskhigh = shift(tunedmask,0,-3)
+  ;tunedmask = tunedmasklow OR tunedmaskhigh
 
   ;window,xs=1024,ys=512
   ;print,'INFO: no mask'
   ;tvscl,hist_equal(congrid(tmpimg>0,xsize,ysize)
   ;stop
-  print,'INFO: tuned tunedmask to 36.353'
-  tvscl,hist_equal(congrid((tmpimg*tunedmask)>0,xsize,ysize))
-  wait,1
+  ;print,'INFO: tuned tunedmask to 36.353'
+  ;tvscl,hist_equal(congrid((tmpimg*tunedmask)>0,xsize,ysize))
+  ;wait,1
   ;stop
-  wdelete
+  ;wdelete
 
   ; change data type of image to float
   imgdim=size(bmegs[0].image,/dim)
@@ -856,34 +861,36 @@ skip_detailed_image_plots:
   result.time = bmegs.time
   result.pixel_error = bmegs.pixel_error
   result.fid_index = bmegs.fid_index
-
+  result.image = bmegs.image ; already dark fit corrected in 36.389
+  
   orig = result                 ; keep a copy for testing
 
-  print,'INFO: removing dark'
+  ;print,'INFO: removing dark'
   ; remove dark
-  status=remove_megsb_dark_36389(bmegs, result, tunedmask)
+  ;status=remove_megsb_dark_36389(bmegs, result, tunedmask) ; already removed
   nodarkimg=result
 
   ; now do particle filtering
   print,'INFO: particle filtering'
   status=remove_megsb_spikes_36389(nodarkimg, result)
-  nospikes=result
+  nospikes=temporary(result)
 
   ; save these results for Phil and the others
   if save_filtered_img eq 1 then begin
-     print,'saving intermediate data for analysis by others'
-     tmp=strsplit(systime(),/extract)
-     ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
-     file='../data/rkt36'+numberstr+'_megsb_dark_particles_'+ts+'.sav'
+     print,'INFO: saving intermediate data for analysis by others'
+     ;tmp=strsplit(systime(),/extract)
+     ;ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
+     file='../data/rkt36'+numberstr+'_megsb_dark_particles_.sav'
      rec={time:0., image:fltarr(2048,1024)}
      gd=where(nospikes.time gt -60,n_gd)
      mb_no_spikes = replicate(rec,n_gd)
      mb_no_spikes.time = nospikes[gd].time
      mb_no_spikes.image = nospikes[gd].image
      stop,'*** you really do not want to save this if it is not necessary***'
+
      save,file=file, mb_no_spikes, /compress
      mb_no_spikes=0b
-     print,'saved'
+     print,'INFO: saved, now you can make_megsb_spectrum to create the wavelength map'
   endif
    
   heap_gc
@@ -979,7 +986,7 @@ skip_detailed_image_plots:
   ; V3.9 change
   print,'INFO: restoring wavelength map'
   workingdir = file_dirname(routine_filepath()) ; in code
-  datapath = workingdir+'/../data/'
+  datapath = file_dirname(workingdir)+'/data/'
   restore,datapath+'rkt36'+numberstr+'_megsb_full_wave.sav' ; waveimg
    ; make this a function that applies correction to sensitivity
    ; to make megsb match megsa in overlap
@@ -1051,13 +1058,14 @@ skip_detailed_image_plots:
   xr=[solaridx_b[0],solaridx_b[-1]]
 
   ; atmos absorption
-  plot,ps=-4,spectra.sp[3213]/mean(spectra[ctr[0]:ctr[1]].sp[3213]),yr=[-0.05,1.2], xr=xr, tit='36.'+numberstr+' Wavelength '+strtrim(string(spectra[0].w[3213],form='(f6.3)'),2)+' nm',ys=1,xtit='Index'
+  plot,ps=-4,spectra.sp[3213]/mean(spectra[ctr[0]:ctr[1]].sp[3213]),yr=[-0.05,1.2], xr=xr, tit='36.'+numberstr+' Wavelength '+strtrim(string(spectra[0].w[3213],form='(f6.3)'),2)+' nm bin',ys=1,xtit='Index'
   oplot,ps=-1,spectra_cps.sp[3213]/mean(spectra_cps[ctr[0]:ctr[1]].sp[3213]),co='fe'x
   oplot,!x.crange,[0,0],lines=1
   oplot,!x.crange,[1,1]*0.9,lines=1
   oplot,!x.crange,[1,1],lines=1
   oplot,[1,1]*ctr[0],!y.crange,lines=1
   oplot,[1,1]*ctr[1],!y.crange,lines=1
+  oplot,[1,1]*ctr0+7,!y.crange,lines=1,co='fe'x,thick=2
   axis,90,.5,/data,xrange=spectra[round(!x.crange)].time,xs=1,xtit='Time (sec)'
   stop
 

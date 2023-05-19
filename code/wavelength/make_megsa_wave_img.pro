@@ -77,7 +77,7 @@ endif
 ; determine a high-resolution spectrum (w and sp)
 n_spec=n_elements(img[0,*])
 n_wave=n_elements(img[*,0])
-;wout=dindgen(3100)*.025d0 + 31.d0 ;min(wimg)
+
 wout=dindgen(3600)*.010d0 + 3.d0 ;min(wimg)
 n_out=n_elements(wout)
 spout=dblarr(n_out)
@@ -90,6 +90,7 @@ spout=total(flux_out,2,/double)>(1.e-9) ;.1
 
 ;stop
 return
+
 if debug eq 0 then return
 
 ;

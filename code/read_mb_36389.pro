@@ -384,9 +384,9 @@ pro make_mb_spectra, input, tunedmask, spectra, sensitivity_in=sensitivity_in, s
   @config36389
   
 workingdir = file_dirname(routine_filepath()) ; in code
-datapath = workingdir+'/../data/'
+datadir = file_dirname(workingdir)+'/data/'
 
-restore, datapath + 'rkt36'+numberstr+'_megsb_full_wave.sav'
+restore, datadir + 'rkt36'+numberstr+'_megsb_full_wave.sav'
 
 wimg = waveimg
 
@@ -564,13 +564,13 @@ end
 ; Either warming or cooling is occurring with possibly strong gradients.
 ;
 ;-
-function make_dark_fit, bmegs
+function make_dark_fit_bmegs, bmegs
 
   @config36389
   
   workingdir = file_dirname(routine_filepath()) ; in code
-  datapath = workingdir+'/../data/'
-  savfile = datapath + 'rkt36'+numberstr+'_megsb_darkfit.sav'
+  datadir = file_dirname(workingdir)+'/data/'
+  savfile = datadir + 'rkt36'+numberstr+'_megsb_darkfit.sav'
 
   if file_test(savfile) eq 1 then begin  
      print,'INFO: make_dark_fit - restoring fits from '+savfile
@@ -578,7 +578,7 @@ function make_dark_fit, bmegs
      return, darkimg
   endif
 
-  print,'INFO: starting make_dark_fit'
+  print,'INFO: starting make_dark_fit_bmegs'
 
   time = reform(bmegs.time)
 
@@ -608,7 +608,7 @@ function make_dark_fit, bmegs
         darkimg[i,j,*] = poly(time, reform(fit[i,j,*]))
      endfor
   endfor
-  print,'INFO: returning from make_dark_fit'
+  print,'INFO: returning from make_dark_fit_bmegs'
 
   save, file=savfile, darkimg
   return,darkimg
@@ -633,21 +633,15 @@ function read_mb_36389
   wdelete
   !p.color=0 & !p.background='ffffff'x & !p.charsize=1.5
 
-  ; this expects a /code/ dir to contain this file and a /data/ dir at the same level as /code/ containing Tom's saesets
+  ; this expects a /code/ dir to contain this file and a /data/ dir at the same level as /code/ containing Tom's savesets
 
   ; change to this directory
   workingdir = file_dirname(routine_filepath())
   cd,workingdir
+  datadir = file_dirname(workingdir)+'/data/'
+  
+  tomsMBSaveFile = datadir+'/TM2_36'+numberstr+'_MEGSB_bdata.sav' ; contains bdata
 
-  tomsMBSaveFile = workingdir+'/../data/TM2_36'+numberstr+'_MEGSB_bdata.sav' ; contains bdata
-
-  ;
-  ; ***
-  ; Probably need to chop down input data to reduce memory usage, expect it to crash IDL
-  ; ***
-  ;
-
-  ;BDATA           STRUCT    = -> <Anonymous> Array[140]
   ;IDL> help,bdata,/str
   ;** Structure <2639768>, 5 tags, length=4194328, data length=4194328, refs=1:
   ;   TIME            DOUBLE          -809.89897
@@ -671,11 +665,9 @@ function read_mb_36389
   ; adjust locations by 4 pixels to fix real pixel locations
   ; shift columns to align lines across center (only one way will work)
   ; directions are opposite because readout is from opposite sides
-  for i=0,n_elements(bdata)-1 do begin
-     bdata[i].image[*,0:511] = shift(bdata[i].image[*,0:511],-4,0)
-     bdata[i].image[*,512:1023] = shift(bdata[i].image[*,512:1023],4,0)
-  endfor
-
+  tmp = fix_vc_offset(bdata.image)
+  bdata.image = temporary(tmp)
+  
   print,'INFO: done'
   ; need to create bmegs array of structures to match 36.290 and 36.336
   rec = {time:0.d, pixel_error:0L, fid_index:0, image:fltarr(2048,1024)}
@@ -703,12 +695,11 @@ function read_mb_36389
 
   ;stop
   ; temp dark
-  ; try a linear fit to rimg with a filter for solar/ff/spikes/etc
-  testdark = make_dark_fit(bmegs)
-  ;rawsignal = bmegs.image - testdark ; dark removed, still has particle strikes
+  ; try a linear fit with a filter for solar/ff/spikes/etc
+  testdark = make_dark_fit_bmegs(bmegs)
 
-  ; replace bmegs.image with rawsignal
-  bmegs.image -= testdark
+  ; replace bmegs.image with signal-dark
+  bmegs.image -= testdark ; dark removed, still has particle strikes
   ;stop
 
 
@@ -777,7 +768,7 @@ skip_detailed_image_plots:
 
 
   print,'INFO: figuring out MEGS_B tunedmask'
-  restore,'../data/megsb_default_mask.sav' ; larger than necessary mask
+  restore,datadir+'/megsb_default_mask.sav' ; larger than necessary mask
   zmask = default_mask
   print,'INFO: default mask'
   refsunidx = solaridx_b[10]    ; pick a reference solar image
@@ -986,8 +977,8 @@ skip_detailed_image_plots:
   ; V3.9 change
   print,'INFO: restoring wavelength map'
   workingdir = file_dirname(routine_filepath()) ; in code
-  datapath = file_dirname(workingdir)+'/data/'
-  restore,datapath+'rkt36'+numberstr+'_megsb_full_wave.sav' ; waveimg
+  datadir = file_dirname(workingdir)+'/data/'
+  restore,datadir+'rkt36'+numberstr+'_megsb_full_wave.sav' ; waveimg
    ; make this a function that applies correction to sensitivity
    ; to make megsb match megsa in overlap
   ; mbCor = EXP( 10.950772 + waveimg *  (-0.25827815 ))

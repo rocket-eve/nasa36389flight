@@ -249,20 +249,16 @@ output.image = input.image
 ; only work on "good" solar data
 
 ;identify types
-;dark1idx=[0,3,5,7,9,11,13,15,16,18,22,24,26,27,29]
-;ffidx=[2,25,70]
-;solaridx=[31,32,33, 35,36, 38,39,40,41,42,43, 45,46,47,48,49,50,51,52,53,54, 56,57,58,59,60,61,62,63,64,65,66]
-;dark2idx=[67,68,69, 71,72,73,74,75,76] ; only 68 has no waves
 
-dark1idx=dark1idx_a ;[81,82,84,89,90]
-ffidx= ffidx_a ;[133,134]
-solaridx=solaridx_a ;[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
-dark2idx=dark2idx_a ;[130,131,136,137]
+dark1idx=dark1idx_a
+ffidx= ffidx_a
+solaridx=solaridx_a
+dark2idx=dark2idx_a
 
-filterimgspike, dark1idx, output
+filterimgspike, dark1idx, output ; use /heavy?
 filterimgspike, ffidx, output
 filterimgspike, solaridx, output
-filterimgspike, dark2idx, output
+filterimgspike, dark2idx, output ; use /heavy?
 
 return,output
 end
@@ -292,9 +288,9 @@ pro make_ma_spectra36389, input, spectra, zmask1, zmask2, sens1img=sens1img, sen
 workingdir = file_dirname(routine_filepath()) ; in code
 ;cd,workingdir
 
-datapath = workingdir+'/../data/'
+datadir = file_dirname(workingdir)+'/data/'
 
-restore,datapath+'rkt36'+numberstr+'_megsa_full_wave.sav' ; waveimg
+restore,datadir+'rkt36'+numberstr+'_megsa_full_wave.sav' ; waveimg
 ; get l1 wavelength scale
 
 
@@ -419,33 +415,94 @@ end
 ;-
 function fix_ma_corrupted_image, amegs
 
-; replace corrupted images in 36.389 (old way uses a median)
+; if special filtering is not known then just return
+  return,amegs
+
+  
+; replace corrupted images (old way uses a median)
 ; (old way) amegs[95].image  = median(amegs[[94,96]].image,dim=3,/even)
-tmp = amegs[95].image
+  tmp = amegs[95].image
 ; top and bottom rows are OK, but middle needs to be fixed
 ; have to fix top and bottom separately
-rtmp = rotate(tmp,2) ; 180 deg rotation
+  rtmp = rotate(tmp,2)          ; 180 deg rotation
 ; now need to shift to move VC to the right place
-cn = 344
-rtop = rtmp[*,0:511]
-rtop = shift(rtop,cn) ; guess
+  cn = 344
+  rtop = rtmp[*,0:511]
+  rtop = shift(rtop,cn)         ; guess
 
-rbot = rtmp[*,512:1023]
-rbot = shift(rbot,-1*cn)
+  rbot = rtmp[*,512:1023]
+  rbot = shift(rbot,-1*cn)
 ; examine then reassemble
 
-new=tmp ; keep lowest 70 and highest 70 rows
-rn = 70
-new[*,rn:511] = rtop[*,rn:511]
-new[*,512:1023-rn] = rbot[*,0:511-rn]
-new[*,rn] = amegs[94].image[*,rn] ; copy from previous image
-new[*,1023-rn] = amegs[94].image[*,1023-rn]
+  new=tmp                       ; keep lowest 70 and highest 70 rows
+  rn = 70
+  new[*,rn:511] = rtop[*,rn:511]
+  new[*,512:1023-rn] = rbot[*,0:511-rn]
+  new[*,rn] = amegs[94].image[*,rn] ; copy from previous image
+  new[*,1023-rn] = amegs[94].image[*,1023-rn]
+  
+  amegs[95].image = new
 
-amegs[95].image = new
-
-return, amegs
+  return, amegs
 end
  
+
+;+
+; Assume dark is slowly changing over time with no steps.
+; Fit darks vs time. Since cryocooler is continuously running pre-launch
+; the temperature behavior is non-equilibrium everywhere.
+; Either warming or cooling is occurring with possibly strong gradients.
+;
+;-
+function make_dark_fit_amegs, amegs
+
+  @config36389
+  
+  workingdir = file_dirname(routine_filepath()) ; in code
+  datadir = file_dirname(workingdir)+'/data/'
+  savfile = datadir + 'rkt36'+numberstr+'_megsa_darkfit.sav'
+
+  if file_test(savfile) eq 1 then begin  
+     print,'INFO: make_dark_fit_amegs - restoring fits from '+savfile
+     restore, savfile
+     return, darkimg
+  endif
+
+  print,'INFO: starting make_dark_fit_amegs'
+
+  time = reform(amegs.time)
+
+  n_x = n_elements(amegs[0].image[*,0])
+  n_y = n_elements(amegs[0].image[0,*])
+  n_t = n_elements(amegs)
+  
+  launchtime = min(abs(amegs.time), launchidx)
+  ; use 50 sec before launch to guess a "close" dark
+  ref = median(amegs[launchidx-6:launchidx-1].image,dim=3)
+  rimg = amegs.image - rebin(ref,2048,1024,n_elements(amegs))
+
+  darkimg = fltarr(n_x,n_y,n_t) ; return array is same dims as input array [2048,1024,time]
+  
+  n_params = 3                  ; quadratic fit
+  fit = fltarr(n_x, n_y, n_params)
+  start_solar = time[221] ; time[219:220] first 2 images have lots of movement
+  stop_solar = time[256]
+  
+  ; loop over each pixel
+  for i=0,n_x-1 do begin
+     for j=0,n_y-1 do begin
+        ; remove outliers from the "close dark"
+        good = where(abs(rimg[i,j,*]) lt 15 and $ ; remove corruption/ff/etc
+                     ((time lt start_solar) or (time gt stop_solar)),n_gd)        
+        fit[i,j,*] = reform(poly_fit(time[good], reform(amegs[good].image[i,j]), n_params-1))
+        darkimg[i,j,*] = poly(time, reform(fit[i,j,*]))
+     endfor
+  endfor
+  print,'INFO: returning from make_dark_fit_amegs'
+
+  save, file=savfile, darkimg
+  return,darkimg
+end
 
 
 
@@ -460,266 +517,171 @@ end
 ;-
 function read_ma_36389
 
-@config36389
+  @config36389
 
-save_filtered_img = 0 ; set to 1 to write rkt36###_megsa_dark_particles_.sav
-; only need to save once all the images are identified
+  save_filtered_img = 0 ; set to 1 to write rkt36###_megsa_dark_particles_.sav
+  ; only need to save once all the images are identified
 
-window,0,xs=10,ys=10
-wdelete
-!p.color=0 & !p.background='ffffff'x & !p.charsize=1.5
+  window,0,xs=10,ys=10
+  wdelete
+  !p.color=0 & !p.background='ffffff'x & !p.charsize=1.5
 
-; this expects a /code/ dir to contain this file and a /data/ dir at the same level as /code/ containing Tom's saesets
+  ; this expects a /code/ dir to contain this file and a /data/ dir at the same level as /code/ containing Tom's saesets
 
-; change to this directory
-workingdir = file_dirname(routine_filepath())
-cd,workingdir
+  ; change to this directory
+  workingdir = file_dirname(routine_filepath())
+  cd,workingdir
+  datadir = file_dirname(workingdir)+'/data/'
 
-tomsMASaveFile = workingdir+'/../data/TM2_36389_Flight_MEGS-A_adata.sav' ; contains adata
-;tomsMBSaveFile = workingdir+'/../data/TM2_36389_Flight_MEGS-B_bdata.sav' ; contains bdata
+  tomsMASaveFile = datadir+'TM2_36'+numberstr+'_MEGSA_adata.sav' ; contains adata
 
-;ADATA           STRUCT    = -> <Anonymous> Array[140]
+  ;IDL> help,adata,/str
+  ;** Structure <253c128>, 5 tags, length=4194328, data length=4194328, refs=1:
+  ;   TIME            DOUBLE          -809.89897
+  ;   PIXEL_ERROR     LONG                -2
+  ;   FID_INDEX       LONG            147630
+  ;   TOTAL_COUNTS    DOUBLE       2.8983247e+09
+  ;   IMAGE           UINT      Array[2048, 1024]
 
-;IDL> help,adata,/str
-;** Structure <253c128>, 5 tags, length=4194328, data length=4194328, refs=1:
-;   TIME            DOUBLE          -809.89897
-;   PIXEL_ERROR     LONG                -2
-;   FID_INDEX       LONG            147630
-;   TOTAL_COUNTS    DOUBLE       2.8983247e+09
-;   IMAGE           UINT      Array[2048, 1024]
+  if file_test(tomsMASaveFile) ne 1 then begin
+     print,'ERROR: cannot locate Toms MA save file '+tomsMASaveFile
+     stop
+  endif
 
-if file_test(tomsMASaveFile) ne 1 then begin
-  print,'ERROR: cannot locate Toms MA save file '+tomsMASaveFile
-  stop
-endif
-;if file_test(tomsMBSaveFile) ne 1 then begin
-;  print,'ERROR: cannot locate Toms MB save file '+tomsMBSaveFile
-;  stop
-;endif
+  print,'INFO: restoring Toms MEGS-A sav file'
+  restore,tomsMASaveFile
 
-restore,tomsMASaveFile
-; need to create amegs array of structures to match 36.290, 36.336, and 36.353
-rec = {time:0.d, pixel_error:0L, fid_index:0, image:fltarr(2048,1024)}
-;tmp = replicate(rec,n_elements(images[0,0,*]))
+  ; fix virtual column offsets
 
-tmp = replicate(rec,n_elements(adata))
-tmp.time = adata.time
-tmp.pixel_error = adata.pixel_error
-tmp.fid_index = adata.fid_index
-tmp.image = float(adata.image)
+  ;orig=adata
+  
+  ; adjust locations by 4 pixels to fix real pixel locations
+  ; shift columns to align lines across center (only one way will work)
+  ; directions are opposite because readout is from opposite sides
+  ; default is TLBR
+  print,'INFO: moving VC to align top and bottom data'
 
-; need data to be called amegs, fix corrupted images, too
-amegs = fix_ma_corrupted_image(tmp)
+  ; fix VC shift first
+  tmp = fix_vc_offset( adata.image )
+  adata.image  =  temporary(tmp)
+  
+  ;put in wavelength order after fixing the VC offset
+  print,'INFO: reversing images to put in wavelength order'
+  for i=0,n_elements(adata)-1 do adata[i].image=reverse(adata[i].image)
 
-; keep backwards for now, need to fix VC offsets before reversing
-; to put in wavelength order do amegs.image = reverse(temporary(images),1)
-;amegs.image = images ; no reversal yet
+  ; SAM should be in the lower left corner now
+  
+  ; need to create adata array of structures to match 36.290, 36.336, and 36.353
+  rec = {time:0.d, pixel_error:0L, fid_index:0, image:fltarr(2048,1024)}
 
+  tmp = replicate(rec,n_elements(adata))
+  tmp.time = adata.time
+  tmp.pixel_error = adata.pixel_error
+  tmp.fid_index = adata.fid_index
+  tmp.image = float(adata.image)
 
-;restore,tomsMBSaveFile
-;description = info              ; info only stored in mb.sav
-;reltime = info[0,*] ; seconds since launch (negative before)
-reltime = amegs.time
+  ; need data to be called adata, fix corrupted images, too
+  print,'INFO: calling fix_ma_corrupted_image'
+  amegs = fix_ma_corrupted_image(tmp)
 
+  tmp = !NULL
+  adata = !NULL
+  heap_gc
 
-amegs.time = reform(reltime)
-heap_gc
-; restores structure amegs with 77 images
+  ; linear fit with a filter for solar/ff/spikes/etc
+  testdark = make_dark_fit_amegs(amegs)
 
-; look at each image, and the difference with the previous one
-xsize=1920 & ysize=1024
-;window,0,xs=xsize,ys=ysize
-;window,1,xs=800,ys=400
-;window,2,xs=800,ys=400
-for i=0,n_elements(amegs)-1 do begin
-   if amegs[i].time lt 2090 then continue
-   wset,0
-   tmpimg = float(amegs[i].image)
-   tmpimg[*,0:511] -= median(tmpimg[0:3,0:511])
-   tmpimg[*,512:1023] -= median(tmpimg[2043:2047,512:1023])
-   ;tvscl,hist_equal(congrid(amegs[i].image,xsize,ysize))
-   tvscl,hist_equal(congrid(tmpimg,xsize,ysize))
-;   device,decomp=0
-;   tvscl,hist_equal(congrid(amegs[i].image mod 256, xsize, ysize))
-   wset,1
-   previdx = (i + n_elements(amegs) - 1) mod n_elements(amegs) 
-   deltaimg = float(amegs[i].image) - float(amegs[previdx].image)
-   !p.multi=0
-   plot,deltaimg,title='index #'+strtrim(i,2)+'-#'+strtrim(previdx,2)+' T='+strtrim(amegs[i].time,2),yr=median(deltaimg)+[-1.,1.]*6.*stddev(deltaimg),ytit='Difference (DN)
-   wset,2
-   !p.multi=[0,1,2]
-   plot,total(deltaimg,1)/2048.,ystyle=1,xstyle=1, $
-      title='horizontal mean difference of #'+strtrim(i,2)+'-#'+strtrim(previdx,2),xtit='column',ytitle='mean DN/column'
-   plot,total(deltaimg[*,0:511],2)/512.,ystyle=1,xstyle=1,$
-      title='vertical mean difference of #'+strtrim(i,2)+'-#'+strtrim(previdx,2),xtit='row',ytitle='mean DN/row'
-;   device,decomp=1
-   oplot,total(deltaimg[*,512:1023],2)/512.,co='fe'x
-   if i eq 95 then stop
-end
+  ; replace amegs.image with signal-dark
+  amegs.image -= testdark
+  
+  ; look at each image, and the difference with the previous one
+  xsize=1920 & ysize=1024
+  window,0,xs=xsize,ys=ysize, title='0 hist_equal(difference mod 256)'
+  
+  goto,skip_detailed_image_plots
+
+  window,1,xs=800,ys=400,title='1 difference image'
+  window,2,xs=800,ys=400,title='2 row/col mean of difference image'
+  window,3,xs=1024,ys=512,title='3 Hist_equal(Image mod 256)'
+  
+
+  for i=0,n_elements(amegs)-1 do begin
+     ;if amegs[i].time lt 2090 then continue
+     wset,3                     ; quicklook at each image to look for missing data
+     tvscl,hist_equal(congrid(amegs[i].image mod 256,1024,512))
+
+     tmpimg = float(amegs[i].image)
+     tmpimg[*,0:511] -= median(tmpimg[0:3,0:511])
+     tmpimg[*,512:1023] -= median(tmpimg[2043:2047,512:1023])
+
+     wset,0
+     tvscl,hist_equal(congrid(tmpimg,xsize,ysize))
+
+     wset,1
+     previdx = (i + n_elements(amegs) - 1) mod n_elements(amegs) 
+     deltaimg = float(amegs[i].image) - float(amegs[previdx].image)
+     !p.multi=0
+     plot,deltaimg,title='Image pixel diff, index #'+strtrim(i,2)+'-#'+strtrim(previdx,2)+' T='+strtrim(amegs[i].time,2),ytit='Difference (DN)',xtit='Index',$
+          yr=[-20,20]           ;median(deltaimg)+[-1.,1.]*6.*stddev(deltaimg)
+
+     wset,2
+     !p.multi=[0,1,2]
+     rowmean = total(deltaimg,1)/2048.
+     plot,rowmean,ystyle=1,xstyle=1, yr=[-1,1],$
+          title='horizontal mean difference of #'+strtrim(i,2)+'-#'+strtrim(previdx,2),$
+          ytitle='mean DN/column',xtit='row# stdev '+strtrim(stddev(rowmean),2)
+
+     msm = smooth(median(rowmean,9),9,/edge_trunc)
+     oplot,msm,co='feaaaa'x
+     xyouts,50,.5,'smooth metric='+strtrim(stddev(msm),2),co='feaaaa'x
+   
+     topcolmean = total(deltaimg[*,0:511], 2) / 512.
+     botcolmean = total(deltaimg[*,512:1023], 2) / 512.
+     plot,topcolmean,ystyle=1,xstyle=1,$
+          title='vertical mean difference of #'+strtrim(i,2)+'-#'+strtrim(previdx,2),$
+          ytitle='mean DN/row', $
+          xtit='column#, stdev(t/b)='+strtrim(stddev(topcolmean),2)+$
+          ' / '+strtrim(stddev(botcolmean),2)
+     ;   device,decomp=1
+     oplot,botcolmean,co='fe'x
+     xyouts,100,.5,'top',co='fe'x
+     xyouts,100,-.5,'bottom'
+     stop
+  end
 ;stop
-
-;36.389 MA TODO; revisit
-
-;36.353 MA
-; 0 dark has vertical spike streak and frozen curve shape from power-up residual - discard (~9 DN off from final image)
-; 1 dark shows weak horizontal bright/dim alternating patterns
-; 2, 3 dark - discard, center values are decreasing as time goes forward and the detector settles down
-; 4 dark shows similar horizontal ripple noise pattern - discard, center values are decreasing
-; 5-7 dark, center values are decreasing
-; discard all previous images
-; 8 dark shows some larger period ripple noise pattern - ok? center values seem to have stabilized
-; 9,10 dark
-; 11 dark shows horizontal ripple pattern - discard
-; 12-14 dark
-; 15 dark shows some horizontal ripple pattern - discard
-; 16,17 dark
-; 18 dark shows some horizontal ripples - discard
-; 19,20 dark
-; 21 dark shows some horizontal ripples - discard
-; 22,23 dark
-; 24 dark has both horizontal and diagonal ripple pattern - discard
-; 25, 26 dark has diagonal ripple patterns in slit 1 side
-; 27 dark shows both horizontal and diagonal ripple pattern - discard
-; 28 dark
-; 29 dark shows some horizontal ripples - discard
-; 30 dark
-; 31 dark has diagonal ripple patterns in slit 1 side
-; 32 dark shows both horizontal and diagonal ripple pattern - discard
-; 33,34 dark has diagonal ripple patterns in slit 1 side
-; 35 is partial RC with partial darks - discard
-; 36 full RC
-; 37 full RC has horizontal and diagonal ripple pattern
-; 38, 39, 40 full RC
-; 41, 42 partial dark discard
-; 43-45 test pattern
-; 46 partial test pattern/dark
-; 47 dark shows both horizontal and diagonal ripple pattern - discard
-; 48 dark has diagonal ripple patterns in slit 1 side
-; 49 dark shows both horizontal and diagonal ripple pattern - discard
-; 50,51 dark has diagonal ripple patterns in slit 1 side
-; 52 dark shows both horizontal and diagonal ripple pattern - discard
-; 53 dark has diagonal ripple patterns in slit 1 side
-; 54 dark shows both horizontal and diagonal ripple pattern - discard
-; 55,56 dark has diagonal ripple patterns in slit 1 side
-; 57 dark shows both horizontal and diagonal ripple pattern - discard
-; 58 dark has diagonal ripple patterns in slit 1 side
-; 59 FF partially on
-; 60 FF full, 61 FF is dimmer, 62 FF is dimmer, 63 partially on FF
-; 64 dark has diagonal ripple patterns in slit 1 side
-; 65 dark shows both horizontal and diagonal ripple pattern - discard
-; 66 dark has diagonal ripple patterns in slit 1 side
-; 67 dark shows both horizontal and diagonal ripple pattern - discard
-; 68,69 dark has diagonal ripple patterns in slit 1 side
-; 70,71 dark has diagonal ripple patterns in slit 1 side
-; 72 dark shows both horizontal and diagonal ripple pattern - discard
-; 73,74 dark has diagonal ripple patterns in slit 1 side
-; 75 dark shows both horizontal and diagonal ripple pattern - discard
-; 76 dark has diagonal ripple patterns in slit 1 side
-; 77 dark shows both horizontal only near center and diagonal ripple pattern - ok?
-; 78,79 dark has diagonal ripple patterns in slit 1 side
-; 80 dark shows both horizontal and diagonal ripple pattern - discard
-; ***
-; LAUNCH, internal power change may change dark/noise
-; ***
-; 81,82 dark has diagonal ripple patterns in slit 1 side
-; 83 dark shows both horizontal and diagonal ripple pattern - discard
-; 84 dark has diagonal ripple patterns in slit 1 side
-; 85 dark has diagonal ripple patterns in slit 1 side and some corruption near center from data loss
-; 86 dark shows both horizontal and diagonal ripple pattern - discard
-; 87 FF partially on
-; 88 dark shows both horizontal and diagonal ripple pattern - discard
-; 89,90 dark has diagonal ripple patterns in slit 1 side
-; 91 dark shows both horizontal and diagonal ripple pattern - discard
-; 92 first light smear - acquiring sun - discard
-; 93 nearly full spectrum - acquiring sun, not centered - discard
-; 94 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1
-; 95 data loss - corrupted - FIXED in fix_corrupted_image
-; 96 sun centered full spectrum - diagonal pattern on slit 1
-; 97 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
-; 98 sun centered full spectrum - diagonal pattern on slit 1
-; 99 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly above the slit 2 spectrum toward center)
-; 100,101,102,103 sun centered full spectrum - diagonal pattern on slit 1
-; 104 sun centered full spectrum - diagonal pattern on slit 1 - two huge particle strikes diagonally in slit 1
-; 105,106,107 sun centered full spectrum - diagonal pattern on slit 1
-; 108 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
-; 109,110 sun centered full spectrum - diagonal pattern on slit 1
-; 111 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
-; 112 sun centered full spectrum - diagonal pattern on slit 1
-; 113 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly above the slit 2 spectrum toward center)
-; 114,115 sun centered full spectrum - diagonal pattern on slit 1
-; 116 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly above the slit 2 spectrum toward center)
-; 117 sun centered full spectrum - diagonal pattern on slit 1 (dark band under slit 1)
-; 118 sun centered full spectrum - diagonal pattern on slit 1
-; 119 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is in the center of slit 2)
-; 120,121 sun centered full spectrum - diagonal pattern on slit 1
-; 122 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
-; 123,124 sun centered full spectrum - diagonal pattern on slit 1
-; 125 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly below the slit 2 spectrum toward edge)
-; 126,127 sun centered full spectrum - diagonal pattern on slit 1 noticable dimmer solar signal
-; 128 sun centered full spectrum - horizontal pattern and diagonal pattern on slit 1 (slit 2 horizontal is mostly above the slit 2 spectrum toward center)
-; 129 sun centered full spectrum - diagonal pattern on slit 1 nearly all solar signal is gone from long wavelenghts of slit 2
-; 130,131 dark has diagonal ripple patterns in slit 1 side
-; 132,133,134 FF (135 is different)
-; 136,137 dark has diagonal ripple patterns in slit 1 side
-; 138,139 dark shows both lower frequency horizontal and diagonal ripple pattern - discard
-
-;dark1idx_a=[81,82,84,89,90] ; remove_megsa_spikes
-;ffidx_a=[133,134]
-;solaridx_a=[94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129]
-;dark2idx_a=[130,131,136,137]
-;
-;preidx=dark1idx_a ; used in remove_megsa_dark
-;postidx=dark2idx_a
-
-orig=amegs
-; adjust locations by 4 pixels to fix real pixel locations
-; shift columns to align lines across center (only one way will work)
-; directions are opposite because readout is from opposite sides
-; hard coded for TLBR
-print,'INFO: moving VC to align top and bottom data'
-; why not call fix_vs_offset here?
-tmp = fix_vc_offset( amegs.image )
-amegs.image  =  tmp ;fix_vs_offset( amegs.image )
-for i=0,n_elements(amegs)-1 do begin
-   ;;amegs[i].image[*,0:511] = shift(amegs[i].image[*,0:511],-4,0)
-   ;;amegs[i].image[*,512:1023] = shift(amegs[i].image[*,512:1023],4,0)
-   ; filter wild points
-   bad=where(amegs[i].image ge (2.d^14),n_bad) ; larger than max DN
-  if n_bad gt 0 then amegs[i].image[bad]=0 ; fill with zero
-endfor
-
-;put in wavelength order
-print,'INFO: reversing images to put in wavelength order'
-for i=0,n_elements(amegs)-1 do amegs[i].image=reverse(amegs[i].image)
+skip_detailed_image_plots:
 
 
-print,'INFO: removing dark from all images'
-status=remove_megsa_dark_36353(amegs, nodarkimg)
 
-; now do particle filtering
-print,'INFO: removing spikes'
-nospikes=remove_megsa_spikes_36353(nodarkimg)
+;print,'INFO: removing dark from all images'
+;status=remove_megsa_dark_36353(amegs, nodarkimg)
 
-; image 104 needs work on slit 1
+  ; now do particle filtering
+  print,'INFO: removing spikes'
+  nospikes=remove_megsa_spikes_36389(amegs)
+
+  xsize=1024 & ysize=xsize/2L
+  window,0,xsize=xsize,ysize=ysize,title='0'
 
 ; save these results for Phil and the others
-if save_filtered_img eq 1 then begin
-   print,'saving intermediate data for analysis by others'
-   tmp=strsplit(systime(),/extract)
-   ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
-   file='../data/rkt36389_megsa_dark_particles_'+ts+'.sav'
-   rec={time:0., image:fltarr(2048,1024)}
-   gd=where(nospikes.time gt -60,n_gd)
-   ma_no_spikes = replicate(rec,n_gd)
-   ma_no_spikes.time = nospikes[gd].time
-   ma_no_spikes.image = nospikes[gd].image
-   stop,'*** you really do not want to save this if it is not necessary***'
-   save,file=file, ma_no_spikes, /compress
-   ma_no_spikes=0b
-   print,'saved'
-endif
+  if save_filtered_img eq 1 then begin
+     print,'saving intermediate data for analysis by others'
+     ;tmp=strsplit(systime(),/extract)
+     ;ts=tmp[1]+'_'+tmp[2]+'_'+tmp[4]
+     file=datadir+'/rkt36389_megsa_dark_particles_.sav'
+     rec={time:0., image:fltarr(2048,1024)}
+     gd=where(nospikes.time gt -60,n_gd)
+     ma_no_spikes = replicate(rec,n_gd)
+     ma_no_spikes.time = nospikes[gd].time
+     ma_no_spikes.image = nospikes[gd].image
+     offsetidx=gd[0]
+     stop,'*** you really do not want to save this if it is not necessary***'
+     save,file=file, ma_no_spikes,offsetidx, /compress ; for make_megsa_spectrum
+     ma_no_spikes=0b
+     print,'saved'
+  endif
    
-heap_gc
+  heap_gc
 
 
 ; to manually repair some spikes, do something like this...
@@ -728,35 +690,34 @@ heap_gc
 ;nospikes[44].image[bad] = nospikes[43].image[bad] ; manual fix
 ;stop
 
-;restore,'data/SURF_Sep10_sensitivity_megs_a1_fw0.sav' ; sensitivity includes gain
-restore,'../data/sensitivity_MEGSA1_second_order_2013.sav' ; sensitivity includes gain
-old1=sens_uncorrected ;sensitivity
-; fill old1
-for i=0,2047 do begin
-   gd=where(old1[i,*] gt 0 and old1[i,*] lt 100,n_gd,comp=comp)
-   if n_gd gt 0 and n_elements(comp) gt 2 then begin
-      old1[i,comp] = mean(old1[i,gd]) ; replace missing values with mean
-   endif
-endfor
-bad=where(old1 lt 1e-8 or old1 gt 1e-2,n_bad)
-old1[bad] = 1e-2
-old1_sensitivity_error = old1*0.1 ;10% sensitivity_error
+  ;restore,'data/SURF_Sep10_sensitivity_megs_a1_fw0.sav' ; sensitivity includes gain
+  restore,datadir+'/sensitivity_MEGSA1_second_order_2013.sav' ; sensitivity includes gain
+  old1=sens_uncorrected                                       ;sensitivity
+  ; fill old1
+  for i=0,2047 do begin
+     gd=where(old1[i,*] gt 0 and old1[i,*] lt 100,n_gd,comp=comp)
+     if n_gd gt 0 and n_elements(comp) gt 2 then begin
+        old1[i,comp] = mean(old1[i,gd]) ; replace missing values with mean
+     endif
+  endfor
+  bad=where(old1 lt 1e-8 or old1 gt 1e-2,n_bad)
+  old1[bad] = 1e-2
+  old1_sensitivity_error = old1*0.1 ;10% sensitivity_error
 
 
-; new code 8/19 can remove the reverse
-print,'INFO: getting slit 1 sensitivity'
-a1sens = get_36389_sensitivity( /megsa1 )
-a1sensitivity = a1sens[*,512:*] ; cut off
+  ; new code 8/19 can remove the reverse
+  print,'INFO: getting slit 1 sensitivity'
+  a1sens = get_36389_sensitivity( /megsa1 )
+  a1sensitivity = a1sens[*,512:*] ; cut off
 
 
 
-;; reverse so it is in wavelength order
-; TODO: fix uncertainties (new ones are not good)
-;; fold in an extra 10% beyond the 2010 uncertainties
-a1senserr=reverse(old1_sensitivity_error[*,512:1023] * 1.1) > 1e-11 
+  ; TODO: fix uncertainties (new ones are not good)
+  ;; fold in an extra 10% beyond the 2010 uncertainties
+  a1senserr=reverse(old1_sensitivity_error[*,512:1023] * 1.1) > 1e-11 
 
 
-restore,'../data/36336sensitivity_MEGSA2_second_order_2017.sav' ; sensitivity from Brian 7/17/19
+  restore,datadir+'/36336sensitivity_MEGSA2_second_order_2017.sav' ; sensitivity from Brian 7/17/19
 ; MEGS-A2 save file from 36336 contains these items
 ;COMMENTS        STRING    = Array[4]
 ;SENS_CORRECTED1 FLOAT     = Array[2048, 1024] ; 
@@ -773,18 +734,18 @@ restore,'../data/36336sensitivity_MEGSA2_second_order_2017.sav' ; sensitivity fr
 ;-rw-rw-r-- 1 evesdp evesdp  8389880 Feb 21 16:51 sensitivity_MEGSA2_second_order_v2_2013.sav
 ;-rw-rw-r-- 1 evesdp evesdp 16778792 Feb 21 20:21 sensitivity_MEGSB_fw0_380MeV_2013.sav
 
-old2 = reverse(sens_corrected1) ;sensitivity
-; fill old2
-for i=0,2047 do begin
-   gd=where(old2[i,*] gt 0 and old2[i,*]lt 100,n_gd,comp=comp)
-   if n_gd gt 0 and n_elements(comp) gt 2 then begin
-      old2[i,comp] = mean(old2[i,gd]) ; replace missing values with mean
-   endif
-endfor
-bad=where(old2 lt 1e-8 or old2 gt 1e-2,n_bad)
-old2[bad] = 1e-2
+  old2 = reverse(sens_corrected1) ;sensitivity
+  ; fill old2
+  for i=0,2047 do begin
+     gd=where(old2[i,*] gt 0 and old2[i,*]lt 100,n_gd,comp=comp)
+     if n_gd gt 0 and n_elements(comp) gt 2 then begin
+        old2[i,comp] = mean(old2[i,gd]) ; replace missing values with mean
+     endif
+  endfor
+  bad=where(old2 lt 1e-8 or old2 gt 1e-2,n_bad)
+  old2[bad] = 1e-2
 
-old2_sensitivity_error = old2 * 0.1 ; 10%
+  old2_sensitivity_error = old2 * 0.1 ; 10%
 ;; update 7/19/19
 ;plot,old2[*,256],/ylog,yr=[1e-8,1e-4]
 ;oplot,sens_uncorrected[*,256],co='fe'x ; 2017 no 2nd order correction
@@ -793,8 +754,8 @@ old2_sensitivity_error = old2 * 0.1 ; 10%
 ;;oplot,sens_corrected3[*,256],co='aaaa00'x ; 2017 w/ 2009 285MeV
 
 
-print,'INFO: getting slit 2 sensitivity'
-new2 = get_36389_sensitivity(/megsa2)
+  print,'INFO: getting slit 2 sensitivity'
+  new2 = get_36389_sensitivity(/megsa2)
 
 ; filter
 ;;bad=where(new2 lt 1e-8 or new2 gt 1e-2,n_bad)
@@ -803,43 +764,45 @@ new2 = get_36389_sensitivity(/megsa2)
 
 ;stop
 
-; TODO: fix uncertainties (new ones are not good)
-sensitivity_error = (old2_sensitivity_error * 1.1) > 1e-11
-; fold in an extra 10% beyond the 2010 uncertainties
+  ; TODO: fix uncertainties (new ones are not good)
+  sensitivity_error = (old2_sensitivity_error * 1.1) > 1e-11
+  ; fold in an extra 10% beyond the 2010 uncertainties
 
-a2sensitivity = new2[*,0:511]  > 1e-8 ; 2048x512
-a2senserr = sensitivity_error[*,0:511] > 1e-11 ; 2048x512
+  a2sensitivity = new2[*,0:511]  > 1e-8        ; 2048x512
+  a2senserr = sensitivity_error[*,0:511] > 1e-11 ; 2048x512
 
-nospikes.image *= 0.1d ; divide by integration time 10 seconds
-calimg=nospikes
+  nospikes.image *= 0.1d        ; divide by integration time 10 seconds
+  calimg=nospikes
 
-stop
-
-
-print,'INFO: integrating to create cps spectra'
-make_ma_spectra36389, nospikes, spectra_cps, a1mask, a2mask, $
-  wimg1=wimg1, wimg2=wimg2, $
-  sens1img=a1sensitivity, sens1_sp=sens1_sp, sens1err_sp=sens1err_sp, $
-  sens2img=a2sensitivity, sens2_sp=sens2_sp, sens2err_sp=sens2err_sp, $
-  sens1errimg=a1senserr, sens2errimg=a2senserr
-
-stop
+  stop
 
 
-print,'INFO: applying sensitivity maps to cps images'
-for i=0,n_elements(calimg)-1 do begin
-   calimg[i].image[*,512:*] = calimg[i].image[*,512:*] * a1sensitivity
-   calimg[i].image[*,0:511] = calimg[i].image[*,0:511] * a2sensitivity
-endfor
-print,'INFO: integrating to create calibrated spectra'
-make_ma_spectra36389, calimg, spectra_cal, a1mask, a2mask, $
-  wimg1=wimg1, wimg2=wimg2
+  print,'INFO: integrating to create cps spectra'
+  make_ma_spectra36389, $
+     nospikes, spectra_cps, a1mask, a2mask, $
+     wimg1=wimg1, wimg2=wimg2, $
+     sens1img=a1sensitivity, sens1_sp=sens1_sp, sens1err_sp=sens1err_sp, $
+     sens2img=a2sensitivity, sens2_sp=sens2_sp, sens2err_sp=sens2err_sp, $
+     sens1errimg=a1senserr, sens2errimg=a2senserr
 
-a1sens2048=total(a1sensitivity*a1mask,2)/total(a1mask,2,/double) ; 2048
-a2sens2048=total(a2sensitivity*a2mask,2)/total(a2mask,2,/double) ; 2048
+  stop
 
-a1senserr2048=total(a1senserr*a1mask,2)/total(a1mask,2,/double) ; 2048
-a2senserr2048=total(a2senserr*a2mask,2)/total(a2mask,2,/double) ; 2048
+
+  print,'INFO: applying sensitivity maps to cps images'
+  for i=0,n_elements(calimg)-1 do begin
+     calimg[i].image[*,512:*] = calimg[i].image[*,512:*] * a1sensitivity
+     calimg[i].image[*,0:511] = calimg[i].image[*,0:511] * a2sensitivity
+  endfor
+  print,'INFO: integrating to create calibrated spectra'
+  make_ma_spectra36389, $
+     calimg, spectra_cal, a1mask, a2mask, $
+     wimg1=wimg1, wimg2=wimg2
+
+  a1sens2048=total(a1sensitivity*a1mask,2)/total(a1mask,2,/double) ; 2048
+  a2sens2048=total(a2sensitivity*a2mask,2)/total(a2mask,2,/double) ; 2048
+
+  a1senserr2048=total(a1senserr*a1mask,2)/total(a1mask,2,/double) ; 2048
+  a2senserr2048=total(a2senserr*a2mask,2)/total(a2mask,2,/double) ; 2048
 ; remove zeros
 ;cnt=0L
 ;while a1sens2048[cnt] lt 1e-12 do cnt++
@@ -849,7 +812,7 @@ a2senserr2048=total(a2senserr*a2mask,2)/total(a2mask,2,/double) ; 2048
 ;while a1sens2048[cnt] lt 1e-12 do cnt--
 ;a1sens2048[cnt:*]=a1sens2048[cnt]
 ;a1senserr2048[cnt:*]=a1senserr2048[cnt]
-a1sens2048[2043:2047]=a1sens2048[2042]
+  a1sens2048[2043:2047]=a1sens2048[2042]
 
 ;cnt=0L
 ;while a2sens2048[cnt] lt 1e-12 do cnt++
@@ -859,7 +822,7 @@ a1sens2048[2043:2047]=a1sens2048[2042]
 ;while a2sens2048[cnt] lt 1e-12 do cnt--
 ;a2sens2048[cnt:*]=a2sens2048[cnt]
 ;a2senserr2048[cnt:*]=a2senserr2048[cnt]
-a2sens2048[0:3]=a2sens2048[4]
+  a2sens2048[0:3]=a2sens2048[4]
 
 ; APPLY THE 2017/2009 SURF RATIO AS A DEGRADATION TERM TO ADJUST THE
 ; SENSITIVITY - S = S/deg
@@ -871,41 +834,41 @@ a2sens2048[0:3]=a2sens2048[4]
 ;a2senserr2048 ?
 ;stop
 
-; wavelength
-a1w2048=total(wimg1*a1mask,2)/total(a1mask,2) ; 2048
-a1sens3600=interpol(a1sens2048,a1w2048,spectra_cps[0].w1,/nan)
-; somtehing is wrong here...
-a1senserr3600=interpol(a1senserr2048,a1w2048,spectra_cps[0].w1,/nan)
+  ; wavelength
+  a1w2048=total(wimg1*a1mask,2)/total(a1mask,2) ; 2048
+  a1sens3600=interpol(a1sens2048,a1w2048,spectra_cps[0].w1,/nan)
+  ; somtehing is wrong here...
+  a1senserr3600=interpol(a1senserr2048,a1w2048,spectra_cps[0].w1,/nan)
 
-a2w2048=total(wimg2*a2mask,2)/total(a2mask,2) ; 2048
-a2sens3600=interpol(a2sens2048,a2w2048,spectra_cps[0].w2,/nan)
-a2senserr3600=interpol(a2senserr2048,a2w2048,spectra_cps[0].w2,/nan)
+  a2w2048=total(wimg2*a2mask,2)/total(a2mask,2) ; 2048
+  a2sens3600=interpol(a2sens2048,a2w2048,spectra_cps[0].w2,/nan)
+  a2senserr3600=interpol(a2senserr2048,a2w2048,spectra_cps[0].w2,/nan)
 
 ;spectra=spectra_cps
 ;for i=0,n_elements(spectra)-1 do spectra[i].sp1 = (spectra[i].sp1>.1)*a1sens3600
 ;for i=0,n_elements(spectra)-1 do spectra[i].sp2 = (spectra[i].sp2>.1)*a2sens3600
 ;; DUE TO STRANGE EFFECTS, REPLACE SPECTRA with SPECTRA_CAL 10/2/19
 ;stop
-spectra = spectra_cal
+  spectra = spectra_cal
 
-k=3380 ;36.8 ; 3050 is 33.5
-k17=1411 ; 17.11 nm
+  k=3380                        ;36.8 ; 3050 is 33.5
+  k17=1411                      ; 17.11 nm
 ;plot,ps=-4,spectra_cps.sp2[k]/mean(spectra_cps[25:30].sp2[k]),yr=[-0.05,1.2],tit='Wavelength '+strtrim(string(spectra[0].w2[k],form='(f6.3)'),2)+' nm',ys=1,xr=[7,57],xs=1
 
-; rel signal vs image #
-; choose center 10 images from solaridx
-ctr = solaridx_a[n_elements(solaridx_a)/2L]+[-5,5]
-msp = mean(spectra_cps[ctr].sp2,dim=2) ; mean "best" spectrum
-k17col = 'fe'x ; red
-xr=[solaridx_a[0],solaridx_a[-1]]
-plot,ps=-4,spectra_cps.sp2[k]/msp[k],yr=[-0.05,1.2],ys=1,xr=xr,xs=1,xtit='Image #',ytit='Relative signal'
-oplot,ps=-1,spectra_cps.sp2[k17]/msp[k17],co=k17col
-oplot,!x.crange,[0,0],lines=1
-oplot,!x.crange,[1,1],lines=1
-xyouts,/data,mean(!x.crange),.1,strtrim(string(spectra_cps[0].w2[k],form='(f6.3)'),2)+' nm'
-xyouts,/data,mean(!x.crange),.2,strtrim(string(spectra_cps[0].w2[k17],form='(f6.3)'),2)+' nm',co=k17col
+  ; rel signal vs image #
+  ; choose center 10 images from solaridx
+  ctr = solaridx_a[n_elements(solaridx_a)/2L]+[-5,5]
+  msp = mean(spectra_cps[ctr].sp2,dim=2) ; mean "best" spectrum
+  k17col = 'fe'x                         ; red
+  xr=[solaridx_a[0],solaridx_a[-1]]
+  plot,ps=-4,spectra_cps.sp2[k]/msp[k],yr=[-0.05,1.2],ys=1,xr=xr,xs=1,xtit='Image #',ytit='Relative signal'
+  oplot,ps=-1,spectra_cps.sp2[k17]/msp[k17],co=k17col
+  oplot,!x.crange,[0,0],lines=1
+  oplot,!x.crange,[1,1],lines=1
+  xyouts,/data,mean(!x.crange),.1,strtrim(string(spectra_cps[0].w2[k],form='(f6.3)'),2)+' nm'
+  xyouts,/data,mean(!x.crange),.2,strtrim(string(spectra_cps[0].w2[k17],form='(f6.3)'),2)+' nm',co=k17col
 ;oplot,[27,27],!y.crange,lines=1
-stop
+  stop
 
 
 
@@ -931,7 +894,8 @@ stop
 width = 800 & height = 600
 ;solar = lindgen(21)+14L         ; indices of solar measurements (14-35)
 ;solar = lindgen(11)+40L ; 40-50
-solar = lindgen(10)+110
+;solar = lindgen(10)+110
+solar = solaridx_a[10:22] ; pick solar indices where irradiance is flat
 a1 = mean(spectra[solar].sp1 < 1.,dim=2)
 a2 = mean(spectra[solar].sp2 < 1.,dim=2)
 w = spectra[solar[0]].w1 ; same for both
@@ -939,7 +903,8 @@ gd=where(w gt 5.22 and w lt 38.39,comp=bad)
 a1[bad]=1e-8 & a2[bad]=1e-8
 gds1=where(w lt 20.5)
 p = plot(w[gds1], a1[gds1], /stairstep, /ylog, $
-    dimensions=[width,height], $
+         dimensions=[width,height], $
+         yr=[1e-6,1e-2], $
     xtitle='Wavelength (nm)',ytitle='Irradiance (W/m^2/nm)',$
     title='36.'+numberstr+' MA Slit Comparisons at Earth, no atm cor')
 gds2=where(w gt 14) ; exclude SAM area

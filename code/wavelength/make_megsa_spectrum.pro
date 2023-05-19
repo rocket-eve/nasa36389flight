@@ -3,14 +3,14 @@ function get_rep_image, imglist_in, no_fix=no_fix
 ; need an even number of images to do this
 
 imglist = imglist_in
-if keyword_set(no_fix) eq 0 then begin
-   ;imglist = float(fix_vc_offset(imglist_in))
-   ; the shift by 4 pixels is not necessary here since we now read from the newer save file instead of Tom's file
-
-   for i=0L,n_elements(imglist[0,0,*])-1 do begin
-      imglist[*,*,i] = remove_vc_offset(reform(imglist[*,*,i]))
-   endfor
-endif
+;if keyword_set(no_fix) eq 0 then begin
+;   ;imglist = float(fix_vc_offset(imglist_in))
+;   ; the shift by 4 pixels is not necessary here since we now read from the newer save; file instead of Tom's file
+;
+;   for i=0L,n_elements(imglist[0,0,*])-1 do begin
+;      imglist[*,*,i] = remove_vc_offset(reform(imglist[*,*,i]))
+;   endfor
+;endif
 
 ; if there are less than 3 images, then retun min image
 if n_elements(imglist[0,0,*]) lt 3 then return,reform(imglist[*,*,0]<imglist[*,*,1])
@@ -24,7 +24,7 @@ end
 
 pro make_megsa_spectrum
 
-!order=1
+;!order=1 ; why?
 window,0,xs=1024,ys=512
 loadct,39
 ;device,decomp=0
@@ -41,7 +41,7 @@ linefile1='megsa1_solar_lines.dat'
 linefile2='megsa_solar_lines.dat'
 
 workingdir = file_dirname(routine_filepath()) ; in code
-datapath = workingdir+'/../../data/'
+datadir = file_dirname(file_dirname(workingdir))+'/data/'
 
 nrlmax=read_dat(workingdir+'/reference_ma_spectrum_nrleuv_max.dat')
 ;stop
@@ -66,17 +66,27 @@ window,xs=1024,ys=512
 workingdir = file_dirname(routine_filepath()) ; in wavelength dir
 cd,workingdir
 
-datapath = '../../data/'
-restore,datapath+'rkt36'+numberstr+'_megsa_dark_particles_Sep_30_2021.sav'
+filename = datadir+'rkt36'+numberstr+'_megsa_dark_particles_.sav'
+print,'INFO: make_megsa_spectrum - restoring '+filename
+restore, filename
 data = temporary(ma_no_spikes)
 
 ;
 ; These are already shifted for the VC offset
 ;
 
-predarklist=[1,2,3,4,5]
-sunlist=[30,31,32,33,34,35,36,37,38,39,40]
-postdarklist=[61,62]
+; not all images are saves, so add in the offset to use 
+; the indices stored in the config
+predarklist=dark1idx_a-offsetidx  ;[1,2,3,4,5]
+;sunlist=solaridx_a-offsetidx ;[30,31,32,33,34,35,36,37,38,39,40]
+postdarklist=dark2idx_a-offsetidx ;[61,62]
+
+predarklist=predarklist[where(predarklist ge 0)]
+; pre-90 deg roll
+sunlist = [30,31,32,33,34,35,36,37] ;sunlist[where(sunlist gt 0)]
+; post-90 deg roll
+;sunlist = [46,47,48,49,50,51,52] ;sunlist[where(sunlist gt 0)]
+postdarklist = postdarklist[where(postdarklist ge 0)]
 ; 
 
 ; get a representative image
@@ -84,7 +94,7 @@ predark  = get_rep_image(data[predarklist].image)
 sun      = get_rep_image(data[sunlist].image)
 postdark = get_rep_image(data[postdarklist].image)
 
-images = (sun - predark) > 1e-2
+images = (sun - postdark) > 1e-2
 ; good enough for finding a wavelength scale
 
 stop, 'ready to save images to the file'
@@ -122,16 +132,21 @@ zmask=ma*0
 zmask++
 
 ; remove SAM
-zmask[300:600,0:511]=0
+;zmask[300:600,0:511]=0 ; 36.353
+zmask[350:630,0:511]=0 ; 36.389
 
  ;center strip
 ;zmask[*,480:580]=0
-zmask[*,440:515]=0
+;zmask[*,440:515]=0 ; 36.353
+; for 36.383 increase mask
+zmask[*,500:515]=0              ; 36.389 between slits
 
 ; zero out the slit 1  edge to help remove particle noise
-zmask[*,860:*]=0
+;zmask[*,860:*]=0 ; 36.353
+zmask[*,890:*]=0 ; 36.389 (outer edge)
 ; zero out the slit 2  edge to help remove particle noise
-zmask[*,0:70]=0
+;zmask[*,0:70]=0 ; 36.353
+zmask[*,0:50]=0 ; 36.389 (outer edge)
 zmask[0:3,0:511]=0
 zmask[2043:2047,512:1023]=0
 
@@ -154,7 +169,10 @@ waveimg[*,0:511]=wimg2 ;the 30.4 side with sam
 waveimg[*,512:*]=wimg1 ;the short wavelength side
 
 device,decomp=1
-plot,sp1wave,sp1out>10,/ylog,xr=[15,25],yr=[1,1e6]
+!p.multi=0
+;plot,sp1wave,sp1out>10,/ylog,xr=[15,25],yr=[1,1e6]
+plot,sp1wave,sp1out>10,/ylog,xr=[5,15],yr=[1,1e6],tit='36.'+numberstr+' MEGS-A', $
+     xtit='Wavelength (nm)',ytit='Arb Counts'
 oplot,sp2wave,sp2out>10,co='fe'x
 
 ; oplot some lines
@@ -165,6 +183,9 @@ for i=0,n_elements(lw)-1 do oplot,lw[i]*[1,1],[1,1e10],lines=1
 
 ; overplot the NRLEUV spectrum scaled for comparison
 oplot,nrlmax[0,*],nrlmax[1,*]*1e9,co='ff0000'x,ps=10
+
+legend_dlw,['Slit1','Slit2','NRLEUV (scaled)'],$
+           textcolor=[0,'fe'x,'ff0000'x]
 
 
 stop
@@ -208,7 +229,7 @@ for j=5,35,step do begin
    ;oplot,sp2wave,eve_sp2*sf2,co=colors[4],ps=10 ; green
    legend_dlw,['Slit1','Slit2','NRLEUV','EVE Slit1 2013294','EVE Slit2 2013294'],$
               textcolor=colors
-   ;stop
+   stop
 endfor
 
 do_ma_cm_calc1,ma
@@ -286,8 +307,8 @@ stop
 ;waveimg2 = waveimg
 ;stop
 
-description=systime(0,/utc)+' Fit to each slit separately 36.'+numberstr+' data on '+getenv('HOST')+' using /Users/dlwoodra/idl/rocket/36'+numberstr+' with make_megsa_spectrum.pro, note that slit 2 is row 0 to 511, and slit1 is row 512 to 1023.'
-save,file='rkt36'+numberstr+'_megsa_full_wave.sav',description,waveimg,/compress
+description=systime(0,/utc)+' Fit to each slit separately 36.'+numberstr+' data on '+getenv('HOST')+' using '+workingdir+' with make_megsa_spectrum.pro, note that slit 2 is row 0 to 511, and slit1 is row 512 to 1023.'
+save,file=datadir+'/rkt36'+numberstr+'_megsa_full_wave.sav',description,waveimg,/compress
 print,'---'
 print,'saved rkt36'+numberstr+'_megsa_full_wave.sav'
 print,'---'

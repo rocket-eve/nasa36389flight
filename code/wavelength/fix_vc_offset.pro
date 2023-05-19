@@ -21,6 +21,11 @@
 ;       All primitive number types are OK. The dimentions are important.
 ;       DImensions must be 2048,1024,N in that exact order.
 ;
+; :Keywords:
+;    mode: in, optional, type=int
+;       Mode number 0, 1, 2, or 3 only. Mode 1 is default TLBR.
+;       Use only TLBR for rocket. Flight is different.
+; 
 ; :Example:
 ;  IDL> shuffled = fix_vc_offset( amegs.image )
 ;  Here the IDL evaluation of the array of structures containing
@@ -28,20 +33,33 @@
 ; expecting it.
 ;
 ;-
-function fix_vc_offset, imgarr
+function fix_vc_offset, imgarr, mode=mode
 
-;imgarr is [2048,1024,n]
+  ;imgarr is [2048,1024,n]
 
-dims = size(imgarr,/dim)
-if dims[0] ne 2048 or dims[1] ne 1024 then begin
-  print,'ERROR: fix_vs_offset did not revieve an array of size [2048,1024,N]'
-  stop
-endif
+  if size(mode,/type) eq 0 then mode=1 ; TLBR
 
-newimg = imgarr
+  ; this sets the direction of the pixel shift that will be applied
+  tdir=-1 ; TL default
+  bdir=1 ; BR default
 
-newimg[*,0:511,*]    = shift(imgarr[*,0:511,*],[-4,0,0])
-newimg[*,512:1023,*] = shift(imgarr[*,512:1023,*],[4,0,0])
+  if mode eq 0 then bdir=tdir ; TLBL
+  if mode eq 2 then begin ; TRBL, switch both
+     tdir=1
+     bdir=-1
+  endif
+  if mode eq 3 then tdir=bdir ; TRBR
+  
+  dims = size(imgarr,/dim)
+  if dims[0] ne 2048 or dims[1] ne 1024 then begin
+     print,'ERROR: fix_vs_offset did not revieve an array of size [2048,1024,N]'
+     stop
+  endif
+  
+  newimg = imgarr
 
-return,newimg
+  newimg[*,0:511,*]    = shift(imgarr[*,0:511,*],[tdir*4,0,0])
+  newimg[*,512:1023,*] = shift(imgarr[*,512:1023,*],[bdir*4,0,0])
+
+  return,newimg
 end

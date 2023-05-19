@@ -152,11 +152,13 @@ endif else begin
     ; 18.06 @ 925
     ; 28.4 @ 1522
     ; 30.378 @ 1628
-    hand_pix  = [868.,  925., 1522., 1628.]
+    ;hand_pix  = [868.,  925., 1522., 1628.] ; 36.358
+    hand_pix  = [868.,  925., 1523., 1629.] ; 36.389
     hand_wave = [17.1, 18.06,  28.4, 30.378]
     tmp = poly_fit(hand_pix,hand_wave,2)
+    print,'INFO: initial wavelength guess for slit 2 ',tmp
     pre_wave2 = tmp[0] + tmp[1]*findgen(2048) + tmp[2]*(findgen(2048)^2)
-    
+    ;stop
 
     ;mobi tank spectrum for flight EVE MEGS-A
     ;dwave = (30.3783-24.3027)/(1647-1311) ; best guess using eyeball
@@ -184,6 +186,12 @@ endif else begin
        ;pre_wave = 3.86799 + (0.0135148 + findgen(NUM_MEGSB_COLS)*(1.51956e-06)) * findgen(NUM_MEGSB_COLS) ;initial guess
        ; 36.258
        pre_wave = 4.44838 + (0.0134807 + findgen(NUM_MEGSB_COLS)*(1.53442e-06)) * findgen(NUM_MEGSB_COLS) ;initial guess
+
+       ;; 36.389
+       ;hand_pix  = [715., 857.] ; 36.389 TODO: revisit with known spectra
+       ;hand_wave = [14.8377, 17.1]
+       ;tmp = poly_fit(hand_pix,hand_wave,2)
+
     endif
     param = [ 0.597, dwave ]
 endelse

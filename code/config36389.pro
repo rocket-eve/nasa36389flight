@@ -10,10 +10,11 @@ version = '1_0'
 numberstr = '389' ; 36.389
 theyd = 2023123 ; may 3, 2023 18:30:00 UT
 humandatestr='May 3, 2023'
-au = 1.00781 ; from Tom Woods, could get from lisird lasp_vsop87_1au_correction_PT1M
+au = 0.98419335 ; from lisird lasp_vsop87_1au_correction_PT1M
 ; call this interactively to get 1-AU factor from LISIRD
-; s=get_lisird_data(dataset='lasp_vsop87_1au_correction_PT1M',mintime='2021-09-09T17:30:00',maxtime='2021-09-09T17:35:00',/jd)
-; earth is far from sun, so need to increase irradiance
+; s=get_lisird_data(dataset='lasp_vsop87_1au_correction_PT1M',mintime='2023-05-03T18:30:00',maxtime='2023-05-03T17:45:00',/jd)
+; Earth is far sun, so need to increase irradiance
+; The irradiace at 1au is the measured irradiance divided by au
 
 apogeekmstr = '293.98' ; revisit
 apogeesecstr = '280.05' ; check (279?)

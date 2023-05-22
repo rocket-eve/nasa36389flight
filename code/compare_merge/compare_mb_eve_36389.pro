@@ -7,7 +7,7 @@ wdelete
 @config36389
 
 workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
-datadir = workingdir+'/../../data/'
+datadir = file_dirname(file_dirname(workingdir))+'/data/'
 
 restore,'rocket36'+numberstr+'_megsb_irr.sav' ; use spectra
 

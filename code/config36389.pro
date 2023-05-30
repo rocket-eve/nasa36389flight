@@ -20,9 +20,10 @@ apogeekmstr = '293.98' ; revisit
 apogeesecstr = '280.05' ; check (279?)
 
 ; used in msis00e
-ft7 = 161.5 ; adjusted
-ft7a = 88. ; TODO - revisit ft7a (81-day avg) when known
-fap = 2.0 ; Potsdam - TODO - revisit (https://kp.gfz-potsdam.de/en/data)
+ft7 = 164.3 ; adjusted
+ft7a = 152.0                    ; TODO - revisit ft7a (81-day avg) when known
+;more penticton_radio_flux.csv | tail -183 | awk -F',' '{print $2}' | awk -f ~/bin/avg.awk
+fap =2.0 ; Potsdam - TODO - revisit (https://kp.gfz-potsdam.de/en/data)
 
 sza=31.05 ; deg TODO: revisit
 

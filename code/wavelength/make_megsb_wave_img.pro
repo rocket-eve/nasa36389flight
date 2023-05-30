@@ -3,7 +3,7 @@ pro make_megsb_wave_img, img, wimg, wout,spout, file=file
 debug=0
 ;debug=1
 
-if size(file,/type) eq 0 then file='megsb_ne_lines.dat'
+if size(file,/type) eq 0 then file='megsb_solar_lines.dat'
 ;d=read_dat(file)
 ;keepers=where(d.cal ne 0,n_keepers)
 ;lines=d[keepers]
@@ -34,7 +34,7 @@ if size(wimg,/type) eq 0 then begin
         lo=(vctr-(slitimghgt/2)) + i*striphgt
         hi=lo+striphgt-1
         sp=total(img[*,lo:hi],2)
-        w=megs_sp_wave_cal(sp,err,s,file=file,/megsb,debug=0) ;use normal fitting for sp
+        w=megs_sp_wave_cal2(sp,err,s,file=file,/megsb,debug=0) ;use normal fitting for sp
         strip_sp[*,i]=sp
         strip_w[*,i]=w
         wimg[*,(lo+hi)/2]=w

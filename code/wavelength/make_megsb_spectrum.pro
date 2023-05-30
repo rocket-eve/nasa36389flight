@@ -65,9 +65,14 @@ window,xs=1024,ys=512
 workingdir = file_dirname(routine_filepath()) ; in wavelength dir
 cd,workingdir
 
-datapath = '../../data/'
+datapath = file_dirname(file_dirname(workingdir))+'/data/'
 restore,datapath+'rkt36'+numberstr+'_megsb_dark_particles_.sav'
 ; created from read_mb_36389 (set save_filtered_img=1)
+
+; discard non-solar data focus on only near apogee
+apogeetime = float(apogeesecstr)
+gd = where(mb_no_spikes.time gt apogeetime-40 and mb_no_spikes.time lt apogeetime+40)
+mb_no_spikes = mb_no_spikes[gd]
 
 megs_b = temporary(mb_no_spikes)
 
@@ -84,7 +89,10 @@ sunlist = solaridx_b ;[30,31,32,33,34,35,36,37,38,39,40]
 ; good enough for finding a wavelength scale
 ;stop,'ready to save images to the file'
 
-images = median(megs_b[0:n_elements(megs_b)/2].image,dim=3) ; images is one image [ 2048,1024]
+;images = median(megs_b[0:n_elements(megs_b)/2].image,dim=3) ; images is one image [ 2048,1024]
+apogeetime = float (apogeesecstr)
+apogeelist = where(megs_b.time gt apogeetime-40 and megs_b.time lt apogeetime+40)
+images = median(megs_b[apogeelist].image,dim=3) ; images is one image [ 2048,1024]
 
 print,'INFO: make_megsb_spectrum - saving images to file'
 save,file='mb_corrected_imgs.sav',/compress, images ; contains scalar images variable
@@ -204,7 +212,8 @@ mb=(mb*zmask)>(-.5)
 ;make_megsb_wave_img, mb, wimg, spwave, spout, file=linefile
 ;megsb_image_to_spectrum, mb, spwave, spflux,imgwave=waveimg,linefile=linefile,$
 ;                         imgmask=zmask
-restore,'rkt36336_megsb_full_wave.sav' ; need an initial guess wavelength map
+;restore,'rkt36336_megsb_full_wave.sav' ; need an initial guess wavelength map
+restore,datapath+'rkt36389_megsb_full_wave.sav' ; need an initial guess wavelength map
 guess_imgwave = temporary(waveimg) ; 2048,1024
 ; tweak mask to match this other one that looks better
 zmask = zmask and (guess_imgwave gt 1.)
@@ -215,6 +224,16 @@ thisimgwave = make_megsb_stripe( guess_imgwave*zmask, zmask ) ; 2048, 167
 make_megsb_wave_img, stripeimg, thisimgwave, spwave, spflux, $
    file=linefile
 waveimg = make_megsb_stripe(/undo, thisimgwave, zmask) ; convert back up to 2048x1024
+
+
+; do the curve fit from scratch
+stop
+make_megsb_wave_img, stripeimg, fitimagewave, fitspwave, fitspflux, file=linefile 
+waveimg = make_megsb_stripe(/undo, fitimagewave, zmask) ; convert back up to 2048x1024
+spflux = fitspflux
+spwave = fitspwave
+print,'INFO: make_megsb_spectrum - fit from scratch completed'
+stop
 
 
 ;print,'saving rkt36336_mb_countspectrum.sav'
@@ -228,7 +247,7 @@ description=systime(0,/utc)+' Fit from Raw TLM image file on '+getenv('HOST')+' 
 workingdir = file_dirname(routine_filepath()) ; in wavelength dir
 datapath = file_dirname(file_dirname(workingdir))+'/data/'
 savfile = datapath + 'rkt36'+numberstr+'_megsb_full_wave.sav'
-
+print,'saving waveimg to '+savfile
 save,file=savfile,description,waveimg,/compress
 stop
 stop

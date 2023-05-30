@@ -890,6 +890,11 @@ save,file='rocket36'+numberstr+'_megsa_irr.sav',/compress,spectra,spectra_cps,a1
 print,'saved rocket36'+numberstr+'_megsa_irr.sav'
 stop
 
+; try to fit an exponential?
+fit_megsa_36389_absorption
+
+stop
+
 ; no flight corrections, at earth
 width = 800 & height = 600
 ;solar = lindgen(21)+14L         ; indices of solar measurements (14-35)

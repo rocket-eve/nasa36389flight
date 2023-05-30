@@ -122,7 +122,8 @@ if keyword_set(debug) eq 1 then debug=1 else $
 ;
 if keyword_set(megsb) then begin
 ;dwave = MEGSB_GRATING_D * MEGSB_ANODE_WIDTH / MEGSB_FOCAL_LEN
-    dwave = (97.702-40.193)/(1789-205) ; best guess using eyeball
+;    dwave = (97.702-40.193)/(1789-205) ; best guess using eyeball
+    dwave = (97.702-49.9406)/(1813-500) ; best guess using eyeball 36.389
 ;
 ;pre_wave = 26.1 + dwave * findgen(2048)	      ; initial guess
     ; He guess
@@ -133,10 +134,17 @@ if keyword_set(megsb) then begin
     ;param = [ 35.2, dwave ]
     ;pre_wave = 32.677 + dwave * findgen(NUM_MEGSB_COLS) ;initial guess
     ;param = [ 32.677, dwave ]
-    ; Ne guess from centering in MOBI (2007066)
-    pre_wave = 32.425 + dwave * findgen(NUM_MEGSB_COLS) ;initial guess
-    param = [ 32.425, dwave ]
-endif else begin
+    ;; Ne guess from centering in MOBI (2007066)
+    ;pre_wave = 32.425 + dwave * findgen(NUM_MEGSB_COLS) ;initial guess
+    ;param = [ 32.425, dwave ]
+    ; need a better initial guess for 36.389
+    tmpw = [49.9406, 58.4334, 97.702]
+    tmppix = [501, 734, 1813]
+    tmp = poly_fit(tmppix, tmpw,2)
+    pre_wave = tmp[0] + tmp[1]*findgen(2048) + tmp[2]*(findgen(2048)^2)
+    param = tmp
+
+ endif else begin
     ; MEGS-A needs to be better defined
 
     ;rocket guesses (probably off-center)

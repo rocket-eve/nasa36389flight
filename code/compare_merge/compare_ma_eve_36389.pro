@@ -28,11 +28,11 @@ window,0,xs=10,ys=10
 wdelete
 !p.color=0 & !p.background='ffffff'x & !p.charsize=1.5
 
-@config3639
+@config36389
 ;numberstr and theyd
 
 workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
-datadir = workingdir+'/../../data/'
+datadir = file_dirname(file_dirname(workingdir))+'/data/'
 
 ; not in data dir
 restore,'rocket36'+numberstr+'_megsa_irr.sav' ; use spectra
@@ -49,8 +49,10 @@ restore,'rocket36'+numberstr+'_megsa_irr.sav' ; use spectra
 ;solar = lindgen(21)+14L ; indices of solar measurements (0-25)
 ;solar = lindgen(30)+32L
 ;solar = solaridx_a
-solar = solaridx_a[where(spectra[solaridx_a].time gt 150 and spectra[solaridx_a].time lt 400)]
-
+;solar = solaridx_a[where(spectra[solaridx_a].time gt 150 and spectra[solaridx_a].time lt 400)]
+apogeesec = float(apogeesecstr)
+solar = solaridx_a[where(spectra[solaridx_a].time gt apogeesec-41 and $
+                         spectra[solaridx_a].time lt apogeesec+41)]
 
 ; replace unrealistic values in solar spectra with a fill value
 fill_value = 1e-8
@@ -243,7 +245,8 @@ read_netcdf,localfilename,d
 ;eveyd=2010153
 ;eveyd=2013294
 ; TODO revisit to find closest solar circumstance for MEGS-A
-eveyd=2011174 ; 36.353 approx 100
+eveyd=2013121 ; 36.389 approx 158
+;eveyd=2011174 ; 36.353 approx 100
 ;eveyd=2010139 ; matches 17.4-17.5 mean irradiance from EVE
 ; find this date in eve data to use instead of the one daily file
 ;stop
@@ -340,6 +343,7 @@ xyouts,6,.008,/data,'cps Uncertainty',co='fe5050'x
 prec = sqrt(varcps)/cps
 
 savfile = datadir+'ma_36'+numberstr+'_irr_at_1au.sav'
+print,'INFO: saving '+savfile
 save, file=savfile, wave, irradiance, relEerr, /compress
 
 stop

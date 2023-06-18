@@ -21,10 +21,15 @@ endif
 ntime=dims[0]
 nwave=dims[1]
 
+routinename = ((scope_traceback(/str))[-1]).routine
+
 ; use data from msis00e run on timed-see
-print,'INFO: remove_atm_absorption_36353 using final 36.353 flight profile'
+;print,'INFO: '+routinename+' using final 36.353 flight profile'
+print,'INFO: '+routinename+' using final 36.389 flight profile'
 workingdir = file_dirname(routine_filepath()) ; in code/compare_merge
-read_netcdf,workingdir+'/../../data/rocket_36353_atmtrans.ncdf',atm
+datadir = file_dirname(file_dirname(workingdir))+'/data'
+;read_netcdf,datadir+'/rocket_36353_atmtrans.ncdf',atm
+read_netcdf,datadir+'/rocket_36389_atmtrans.ncdf',atm
 
 !p.background='ffffff'x
 !P.color=0

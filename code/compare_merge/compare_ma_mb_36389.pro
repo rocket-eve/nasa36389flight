@@ -61,7 +61,6 @@ function get_nrleuv, rwave
         ;if total(nrlhrirr[gd]) gt 0 then $
         ;   data.irr[i] = int_tabulated(nrlhrwave[gd], nrlhrirr[gd],/double)
   endfor
-;  data.irr *= binratio
 
   return,data
 end
@@ -69,9 +68,6 @@ end
 function test_get_nrleuv
 
   @config36389
-  ;numberstr = '290'
-  ;version='1_0'
-  ;theyd = 2013294 ; oct 21
 
   restore,'rocket36'+numberstr+'_megsb_irr.sav' ; use spectra
   wave = spectra[0].w
@@ -195,14 +191,8 @@ pro compare_ma_mb_36389
 
 @config36389
   
-;;version='3_8'
-;version='1_0'
-;numberstr = '290'
-;theyd = 2013294
-
-
 workingdir=file_dirname(routine_filepath()) ; in code/compare_merge
-datadir = workingdir+'/../../data/'
+datadir = file_dirname(file_dirname(workingdir))+'/data/'
 
 ; read WHI solar ref
 whi=read_dat(datadir+'ref_solar_irradiance_whi-2008_ver2.dat')
@@ -211,13 +201,13 @@ whi=whi[*,gd]
 whiwave=reform(whi[0,*])
 whiirr =reform(whi[3,*])
 
-;compare_ma_eve_36353, ma_wave, ma_irr, ma_err
+;compare_ma_eve_36389, ma_wave, ma_irr, ma_err
 restore,datadir+'ma_36'+numberstr+'_irr_at_1au.sav'
 ma_wave = temporary(wave)
 ma_irr = temporary(irradiance)
 ma_err = temporary(relEerr)
 
-;compare_mb_eve_36353, mb_wave, mb_irr, mb_err
+;compare_mb_eve_36389, mb_wave, mb_irr, mb_err
 restore,datadir+'mb_36'+numberstr+'_irr_at_1au.sav'
 mb_wave = temporary(wave)
 mb_irr = temporary(irradiance)
@@ -282,7 +272,7 @@ comments = ['Date generated '+systime(),'',$
             '    MEGS-A and B Combined Spectrum',$
             '    '+humandatestr,$
             '------------------------------------',$
-            '    Don Woodraska, Brian Templeman, Phil Chamberlin,',$
+            '    Don Woodraska, Rita Borelli,',$
             '    Tom Woods, Frank Eparvier, Andrew Jones','',$
    ' This spectrum spans the EUV from approximately 6 to 105 nm.','', $
    '*****', $
@@ -294,7 +284,7 @@ comments = ['Date generated '+systime(),'',$
    '*****', $
    '', $
    ' Applied calibration from SURF 2017',$
-   ' Applied NRL-MSIS00E atmospheric correction, about 3% at 30.4 nm',$
+   ' Applied NRL-MSIS00E atmospheric correction based on 36.389 radar data',$
    '', $
    ' MEGS-A slit 1 wavelength range is 0.01 nm sampling from 6-14.93 nm', $
    ' MEGS-A slit 2 wavelength range is 0.01 nm sampling from 14.93-'+strtrim(max_ma_wave,2)+' nm', $
@@ -316,14 +306,13 @@ comments = ['Date generated '+systime(),'',$
    'MEGS-A Slit 1 to slit 2 crossover occurs at 14.93nm', $
    'MEGS-A Slit 2 to MEGS-B crossover occurs at '+strtrim(max_ma_wave,2)+'nm', $
       '', $
-      'The flight profile from 36.336 was used since it is not available for this flight.', $
-      '', $
 ;      'The apogee of 284 km occurred at T+273 seconds.',$
 ;   'Uncertainty is from SURF combined with in-flight scatter from 248-318 ', $
 ;   'seconds after launch','',$
    ''   ]
 
 rktdatfile='rkt_36'+numberstr+'_irradiance_v'+strtrim(version,2)+'.dat'
+print,'INFO: writing '+rktdatfile
 
 write_dat, outdat, filename=rktdatfile,$
   comments=comments, $
@@ -334,6 +323,7 @@ print,'wrote ',rktdatfile
 ; now write .02 nm sampling file
 rktdatfile='rkt_36'+numberstr+'_irradiance_v'+strtrim(version,2)+'_02nm.dat'
 outdat02 = convert_to_02nm(outdat,max_ma_wave) ; like level 2/2b
+print,'INFO: writing '+rktdatfile
 write_dat, outdat02, filename=rktdatfile,$
   comments=comments, $
   format='(f7.3,e13.6,f7.3)',$
@@ -504,7 +494,7 @@ stop
 
 
 ; L2b
-d=eve_read_whole_fits(datadir+'/EVS_L2B_'+strtrim(theyd,2)+'_007_01.fit.gz')
+d=eve_read_whole_fits(datadir+'/EVS_L2B_'+strtrim(theyd,2)+'_007_02.fit.gz')
 ; avg just 15 minutes
 ;evesp=mean(d.spectrum[1140:1155].irradiance,dim=2) ; filter?
 ; 6 sample smooth, then average 15 minutes

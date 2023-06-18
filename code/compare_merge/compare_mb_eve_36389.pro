@@ -37,7 +37,7 @@ endfor
 ;spectra.sp[3660:*]=1e-8 ; remove large spike beyond 106.2 nm
 ;spectra_cps.sp[3660:*] = .01 & spectra_cps.sp=spectra_cps.sp>.01
 
-new = remove_atm_absorption_36353( spectra[solar].time, spectra[solar[0]].w, $
+new = remove_atm_absorption_36389( spectra[solar].time, spectra[solar[0]].w, $
                              spectra[solar].sp )
 
 ;  0.96864051 ; June 18 (169) at 19:00 UTC
@@ -190,6 +190,7 @@ xyouts,35,.008,/data,'cps Uncertainty',co='fe5050'x
 prec=sqrt(varcps)/cps
 
 savfile = datadir+'mb_36'+numberstr+'_irr_at_1au.sav'
+print,'INFO: saving '+savfile
 save, file = savfile, wave, irradiance, relEerr, /compress
 stop
 return

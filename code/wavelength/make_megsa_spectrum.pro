@@ -69,6 +69,7 @@ cd,workingdir
 filename = datadir+'rkt36'+numberstr+'_megsa_dark_particles_.sav'
 print,'INFO: make_megsa_spectrum - restoring '+filename
 restore, filename
+stop
 data = temporary(ma_no_spikes)
 
 ;
@@ -94,8 +95,11 @@ predark  = get_rep_image(data[predarklist].image)
 sun      = get_rep_image(data[sunlist].image)
 postdark = get_rep_image(data[postdarklist].image)
 
-images = (sun - postdark) > 1e-2
+;images = (sun - postdark) > 1e-2
 ; good enough for finding a wavelength scale
+apogeetime = float (apogeesecstr)
+apogeelist = where(data.time gt apogeetime-40 and data.time lt apogeetime+40)
+images = median(data[apogeelist].image,dim=3) ; images is one image [ 2048,1024]
 
 stop, 'ready to save images to the file'
 
@@ -106,11 +110,11 @@ save,file='ma_corrected_imgs.sav',/compress, images ; contains scalar images var
 
 do_img_restore:
 restore,'ma_corrected_imgs.sav' ; images
-ma=images + 1e-7
+ma=images ;+ 1e-7
 
 ; ma is a "best" image to fit
 heap_gc
-;ma=reverse(ma) > .1
+
 ma = (ma) > .1 ; already in wavelength order
 
 device,decomp=0

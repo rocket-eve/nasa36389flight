@@ -416,6 +416,10 @@ end
 function fix_ma_corrupted_image, amegs
 
 ; if special filtering is not known then just return
+
+  ; there is a weird vertical stripe  in [1235-1237,0:511]
+  ; that affects the best solar data from 233-240
+  
   return,amegs
 
   
@@ -462,6 +466,9 @@ function make_dark_fit_amegs, amegs
   datadir = file_dirname(workingdir)+'/data/'
   savfile = datadir + 'rkt36'+numberstr+'_megsa_darkfit.sav'
 
+  ;
+  ; need to skip this block for new rockets
+  ;
   if file_test(savfile) eq 1 then begin  
      print,'INFO: make_dark_fit_amegs - restoring fits from '+savfile
      restore, savfile
@@ -550,9 +557,17 @@ function read_ma_36389
 
   print,'INFO: restoring Toms MEGS-A sav file'
   restore,tomsMASaveFile
-
+  ; To check VC offsets, look at the image to see if 17.1 lines up on both slits
+  ;window,xs=1024,ys=512
+  ;tvscl,hist_equal(congrid(adata[234].image,1024,512))
+  ;stop
+  
   ; fix virtual column offsets
 
+  ;***
+  ;*** TOM HAS ALREADY APPLIED THE VC OFFSET in 36.389 ***
+  ;***
+  
   ;orig=adata
   
   ; adjust locations by 4 pixels to fix real pixel locations
@@ -561,9 +576,9 @@ function read_ma_36389
   ; default is TLBR
   print,'INFO: moving VC to align top and bottom data'
 
-  ; fix VC shift first
-  tmp = fix_vc_offset( adata.image )
-  adata.image  =  temporary(tmp)
+  ;; fix VC shift first
+  ;tmp = fix_vc_offset( adata.image )
+  ;adata.image  =  temporary(tmp)
   
   ;put in wavelength order after fixing the VC offset
   print,'INFO: reversing images to put in wavelength order'

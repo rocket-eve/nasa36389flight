@@ -660,6 +660,11 @@ function read_mb_36389
 
   ; fix virtual column offsets
 
+  ;***
+  ;*** Fixing the Virtual column offsets is needed for MEGS-B in 36.389
+  ;*** it is not needed in MEGS-A strangely
+
+  
   orig=bdata
 
   ; adjust locations by 4 pixels to fix real pixel locations

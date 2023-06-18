@@ -193,13 +193,15 @@ if keyword_set(megsb) then begin
        ; FLIGHT estimate from Harry's spectrum on 4/6/10
        ;pre_wave = 3.86799 + (0.0135148 + findgen(NUM_MEGSB_COLS)*(1.51956e-06)) * findgen(NUM_MEGSB_COLS) ;initial guess
        ; 36.258
-       pre_wave = 4.44838 + (0.0134807 + findgen(NUM_MEGSB_COLS)*(1.53442e-06)) * findgen(NUM_MEGSB_COLS) ;initial guess
+       ;pre_wave = 4.44838 + (0.0134807 + findgen(NUM_MEGSB_COLS)*(1.53442e-06)) * findgen(NUM_MEGSB_COLS) ;initial guess
 
+       ;stop
        ;; 36.389
        ;hand_pix  = [715., 857.] ; 36.389 TODO: revisit with known spectra
-       ;hand_wave = [14.8377, 17.1]
-       ;tmp = poly_fit(hand_pix,hand_wave,2)
-
+       hand_pix = [190.,719., 861.]
+       hand_wave = [6.9682,14.8377, 17.1]
+       tmp = poly_fit(hand_pix,hand_wave,2)
+       pre_wave = tmp[0] + findgen(NUM_MEGSB_COLS)*tmp[1] + (findgen(NUM_MEGSB_COLS)^2)*tmp[2]
     endif
     param = [ 0.597, dwave ]
 endelse

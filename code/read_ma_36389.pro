@@ -380,7 +380,7 @@ for i=0,n_elements(input)-1 do begin
    spectra[i].sp1err=sqrt(total(sp1err^2,2,/double))
    spectra[i].sp2err=sqrt(total(sp2err^2,2,/double))
 
-   plot,sp2wave,sp2flux,/ylog,yr=[.1,1e6],tit='Image #'+strtrim(i,2),ps=10
+   plot,sp2wave,sp2flux,/ylog,yr=[.1 < (min(sp2flux)>1e-7),1e6 < (max(sp2flux))],tit='Image #'+strtrim(i,2),ps=10
    oplot,sp1wave,sp1flux,co='fe'x,ps=10
 
    if i eq maxidx then begin
@@ -419,33 +419,47 @@ function fix_ma_corrupted_image, amegs
 
   ; there is a weird vertical stripe  in [1235-1237,0:511]
   ; that affects the best solar data from 233-240
+
+  ; overcorrecting dark in spectrum near 16.2 nm in slit 2
+  ; spectrum drops down
+  ; looks like column 807 is bad from row 0-511
+  ; replace with spatial avg
   
-  return,amegs
+  plot,amegs[240].image[806,*],ys=1,yr=[1320,1420],tit='fix_ma_corrupted_image'
+  oplot,amegs[240].image[807,*],co='fe'x
+  oplot,amegs[240].image[808,*]
+  
+  amegs.image[807,0:511] = amegs.image[806,0:511]
+  amegs.image[807,0:511] += amegs.image[808,0:511]
+  amegs.image[807,0:511] *= 0.5
+  oplot,amegs[240].image[807,*],co='aa00'x
+  stop
+  return,amegs ;36.389 return here with only 1 fix
 
   
-; replace corrupted images (old way uses a median)
-; (old way) amegs[95].image  = median(amegs[[94,96]].image,dim=3,/even)
-  tmp = amegs[95].image
-; top and bottom rows are OK, but middle needs to be fixed
-; have to fix top and bottom separately
-  rtmp = rotate(tmp,2)          ; 180 deg rotation
-; now need to shift to move VC to the right place
-  cn = 344
-  rtop = rtmp[*,0:511]
-  rtop = shift(rtop,cn)         ; guess
-
-  rbot = rtmp[*,512:1023]
-  rbot = shift(rbot,-1*cn)
-; examine then reassemble
-
-  new=tmp                       ; keep lowest 70 and highest 70 rows
-  rn = 70
-  new[*,rn:511] = rtop[*,rn:511]
-  new[*,512:1023-rn] = rbot[*,0:511-rn]
-  new[*,rn] = amegs[94].image[*,rn] ; copy from previous image
-  new[*,1023-rn] = amegs[94].image[*,1023-rn]
-  
-  amegs[95].image = new
+;; replace corrupted images (old way uses a median)
+;; (old way) amegs[95].image  = median(amegs[[94,96]].image,dim=3,/even)
+;  tmp = amegs[95].image
+;; top and bottom rows are OK, but middle needs to be fixed
+;; have to fix top and bottom separately
+;  rtmp = rotate(tmp,2)          ; 180 deg rotation
+;; now need to shift to move VC to the right place
+;  cn = 344
+;  rtop = rtmp[*,0:511]
+;  rtop = shift(rtop,cn)         ; guess
+;
+;  rbot = rtmp[*,512:1023]
+;  rbot = shift(rbot,-1*cn)
+;; examine then reassemble
+;
+;  new=tmp                       ; keep lowest 70 and highest 70 rows
+;  rn = 70
+;  new[*,rn:511] = rtop[*,rn:511]
+;  new[*,512:1023-rn] = rbot[*,0:511-rn]
+;  new[*,rn] = amegs[94].image[*,rn] ; copy from previous image
+;  new[*,1023-rn] = amegs[94].image[*,1023-rn]
+;  
+;  amegs[95].image = new
 
   return, amegs
 end
@@ -471,6 +485,8 @@ function make_dark_fit_amegs, amegs
   ;
   if file_test(savfile) eq 1 then begin  
      print,'INFO: make_dark_fit_amegs - restoring fits from '+savfile
+     ; make sure no changes have occurred to fix bad pixels
+     ; since last saved
      restore, savfile
      return, darkimg
   endif
@@ -598,17 +614,17 @@ function read_ma_36389
   ; need data to be called adata, fix corrupted images, too
   print,'INFO: calling fix_ma_corrupted_image'
   amegs = fix_ma_corrupted_image(tmp)
-
+stop
   tmp = !NULL
   adata = !NULL
   heap_gc
 
   ; linear fit with a filter for solar/ff/spikes/etc
-  testdark = make_dark_fit_amegs(amegs)
+  fitteddark = make_dark_fit_amegs(amegs)
 
   ; replace amegs.image with signal-dark
-  amegs.image -= testdark
-  
+  amegs.image -= fitteddark
+  stop
   ; look at each image, and the difference with the previous one
   xsize=1920 & ysize=1024
   window,0,xs=xsize,ys=ysize, title='0 hist_equal(difference mod 256)'
@@ -786,6 +802,7 @@ skip_detailed_image_plots:
   a2sensitivity = new2[*,0:511]  > 1e-8        ; 2048x512
   a2senserr = sensitivity_error[*,0:511] > 1e-11 ; 2048x512
 
+  stop
   nospikes.image *= 0.1d        ; divide by integration time 10 seconds
   calimg=nospikes
 
@@ -906,7 +923,7 @@ print,'saved rocket36'+numberstr+'_megsa_irr.sav'
 stop
 
 ; try to fit an exponential?
-fit_megsa_36389_absorption
+;fit_megsa_36389_absorption
 
 stop
 

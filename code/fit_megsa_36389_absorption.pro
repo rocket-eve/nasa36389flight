@@ -419,6 +419,13 @@ pro fit_megsa_36389_absorption, spmodel=spmodel
 
   !p.charsize=1.5 & !p.background='ffffff'x & !p.color=0
   @config36389 ; only needed for plots
+
+  workingdir=file_dirname(routine_filepath()) ; in /code
+  datadir = file_dirname(workingdir)+'/data/'
+
+  radar = read_dat(datadir+'Radar_Data_36_389.dat')
+  radartime_seconds = reform(radar[1,*])
+  altitude_meters = reform(radar[9,*])
   
   restore,'rocket36389_megsb_irr.sav' ; spectra, spectra_cps, etc
   mb_spectra_cps = temporary(spectra_cps)
@@ -427,7 +434,7 @@ pro fit_megsa_36389_absorption, spmodel=spmodel
   restore,'rocket36389_megsa_irr.sav' ; spectra, spectra_cps, etc
   
   ; try to fit an exponential?
-  ; only use data prior to apogee (~T+281)
+  ; only use data prior to apogee of 299.34030 km (~T+283)
   ; roll started during index 247 (T+381) and finished just before 250 (T+411)
   ; index 256 (T+471) is likely partial with door closing
 
@@ -467,6 +474,9 @@ pro fit_megsa_36389_absorption, spmodel=spmodel
   ; use 36.353 radar data to approximate alt at times
   ;sampletime_asc = spectra[ascending].time ; center time
   ; altitudes are km above sea level
+  stop
+  stop
+  stop
   alt_asc = [180.140, 194.13, 207.131, 219.227, 230.387, 240.552, 249.99, 258.44, 265.902, 272.639, 278.367, 283.182, 287.04, 290.089, 292.246, 293.562]
   a0 = 1.26907 ; lowest value is last in descent at T+887 from 36.353, this is an upper limit
 

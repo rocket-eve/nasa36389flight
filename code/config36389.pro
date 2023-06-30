@@ -16,8 +16,8 @@ au = 0.98419335 ; from lisird lasp_vsop87_1au_correction_PT1M
 ; Earth is far sun, so need to increase irradiance
 ; The irradiace at 1au is the measured irradiance divided by au
 
-apogeekmstr = '293.98' ; revisit
-apogeesecstr = '280.05' ; check (279?)
+apogeekmstr = '299.34' ; km
+apogeesecstr = '283.00' ; sec
 
 ; used in msis00e
 ft7 = 164.3 ; adjusted
@@ -25,7 +25,7 @@ ft7a = 152.0                    ; TODO - revisit ft7a (81-day avg) when known
 ;more penticton_radio_flux.csv | tail -183 | awk -F',' '{print $2}' | awk -f ~/bin/avg.awk
 fap =2.0 ; Potsdam - TODO - revisit (https://kp.gfz-potsdam.de/en/data)
 
-sza=31.05 ; deg TODO: revisit
+sza=18.24 ; deg
 
 ; 90 deg roll at T+370s
 ; solar observing T+150-470s

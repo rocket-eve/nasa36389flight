@@ -58,11 +58,11 @@ pro fit_h_cont, wave, irradiance, hydrogencoeffs=hydrogencoeffs, helium1coeffs=h
      ;restore,datadir+'/mb_36389_irr_at_1au.sav' ; wave, irradiance, relEerr
 
      ; try another rocket
-     ;restore,datadir+'/mb_36353_irr_at_1au.sav' ; wave, irradiance, relEerr
-     restore,'../../36336/rkt_36336_irradiance.sav' ; rkt
-     wave = reform(rkt[0,*])
-     irradiance = reform(rkt[1,*])
-     relEerr = reform(rkt[2,*])
+     ;restore,datadir+'/../../36353/data/mb_36353_irr_at_1au.sav' ; wave, irradiance, relEerr
+     ;restore,'../../36336/rkt_36336_irradiance.sav' ; rkt
+     ;wave = reform(rkt[0,*])
+     ;irradiance = reform(rkt[1,*])
+     ;relEerr = reform(rkt[2,*])
      
      
      irr_uncertainty = relEerr

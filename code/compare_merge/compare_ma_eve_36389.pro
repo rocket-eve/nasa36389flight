@@ -49,6 +49,7 @@ restore,'rocket36'+numberstr+'_megsa_irr.sav' ; use spectra
 ;solar = lindgen(21)+14L ; indices of solar measurements (0-25)
 ;solar = lindgen(30)+32L
 ;solar = solaridx_a
+; USE THIS TO SEE MORE ALTITUDES IN THE PROFILE
 ;solar = solaridx_a[where(spectra[solaridx_a].time gt 150 and spectra[solaridx_a].time lt 400)]
 apogeesec = float(apogeesecstr)
 solar = solaridx_a[where(spectra[solaridx_a].time gt apogeesec-41 and $
@@ -81,10 +82,6 @@ new2 = remove_atm_absorption_36389( spectra[solar].time, spectra[solar[0]].w2, $
 
 ;print,'ERROR: without the RADAR data no atmospheric absorption can be done properly'
 ;stop
-
-; TODO - REVISIT
-;au = 0.96864051 ; June 18 (169) at 19:00 UTC
-;theyd = 2013294
 
 ; au is now defined in config36389.pro
 new1 /= au

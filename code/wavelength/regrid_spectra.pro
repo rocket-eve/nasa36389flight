@@ -103,17 +103,23 @@ if !version.release lt 5.4 then begin
     stop,'STOPPED'
 endif
 
-;dllpath = getenv('see_code_l2_egs') + '/'
-;dllpath = './'
 dllpath = file_dirname(routine_filepath())+path_sep() ; same path as this code
 
 case strlowcase(!version.os) of
-    'darwin' : begin
-        dll = dllpath + 'regrid_spectra_mac.so'
-        entry = 'regrid_spectra__' ;g77 appends extra underscore to image
-        if strcmp(!version.arch,'x86_64') then begin
+   'linux' : begin
+      dll = dllpath + 'regrid_spectra_lnx664.so'
+      entry = 'regrid_spectra_'
+   end
+   'darwin' : begin
+        ;dll = dllpath + 'regrid_spectra_mac.so'
+        ;entry = 'regrid_spectra__' ;g77 appends extra underscore to image
+        entry = 'regrid_spectra_' ;gfortran
+        ; x86 no longer maintained for mac
+        ;if strcmp(!version.arch,'x86_64') then begin
+        ;   dll = dllpath + 'regrid_spectra_mac64.so'
+        ;endif
+        if strcmp(!version.arch,'arm64') then begin
            dll = dllpath + 'regrid_spectra_mac64.so'
-           entry = 'regrid_spectra_' ;gfortran
         endif
     end
     'sunos' : begin

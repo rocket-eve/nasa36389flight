@@ -32,25 +32,6 @@ darkmask[*,0] = 0 & darkmask[*,1023]=0 ; top/bottom rows
 ; good images do not show noise stripes across the width
 ; of the CCD
 
-; 36.389 - MEGS-B TODO - revisit
-
-; 36.290 - MEGS-B
-; 0-2 dark
-; 3,4 corrupted dark
-; 5 is flatfield
-; 6,7,8 have low frequency weak wavy vertical noise pattern
-; 9 dark
-; 10,11 partial solar
-; 12-18 solar
-; 19-20 low frequency wavy vertical noise pattern
-; 21-42 good solar
-; 43,47 dimming
-; 48,49 dark
-; 50-53 ff
-; 54-56 dark
-;preidx=[20,21,22,23,24,29] ; not sure if 4 images is enough for a 3-image median
-;postidx=[68,69,73,75,76]
-
 preidx = dark1idx_b ;[81,83,84,86,89,90] ; remove_megsb_spikes
 postidx = dark2idx_b ;[130,138,139]
 
@@ -66,6 +47,7 @@ ys=1024
 window,xs=xs,ys=ys
 tvscl,hist_equal(congrid(tunedmask,xs,ys))
 ;stop
+; TODO: change from 110 to any solar exposure near apogee
 tvscl,hist_equal(congrid((bmegs[110].image - predark)>0,xs,ys))
 ;stop
 tvscl,hist_equal(congrid(((bmegs[110].image - predark)>0)*tunedmask,xs,ys))

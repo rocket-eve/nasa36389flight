@@ -6,7 +6,7 @@
 
 ; define constants used all over the place
 
-version = '1_0'
+version = '1_1' ; improved atm absorption pinned to ESP 30 nm
 numberstr = '389' ; 36.389
 theyd = 2023123 ; may 3, 2023 18:30:00 UT
 humandatestr='May 3, 2023'
@@ -20,10 +20,15 @@ apogeekmstr = '299.34' ; km
 apogeesecstr = '283.00' ; sec
 
 ; used in msis00e
-ft7 = 164.3 ; adjusted
-ft7a = 152.0                    ; TODO - revisit ft7a (81-day avg) when known
+;ft7 = 164.3   ; adjusted
+ft7 = 158.7
+ft7a = 111.4                    ; fitted using ESP
 ;more penticton_radio_flux.csv | tail -183 | awk -F',' '{print $2}' | awk -f ~/bin/avg.awk
-fap =2.0 ; Potsdam - TODO - revisit (https://kp.gfz-potsdam.de/en/data)
+fap =3.0 ; Potsdam - https://kp.gfz-potsdam.de/en/data
+;YYYY MM DD Days  Days    Bart Db  Kp0    Kp1    Kp2    Kp3    Kp4    Kp5    Kp6    Kp7    ap0  ap1  ap2  ap3  ap4  ap5  ap6  ap7    Ap  SN   F10obs   F10adj D
+;2023 05 03 33360 33360.5 2587 25  0.000  0.000  0.333  0.333  1.000  1.000  0.667  2.000    0    0    2    2    4    4    3    7     3 124    156.2    158.7 2
+;aps = [0,0,2,2,4,4,3,7] ; 3 hour ap indices
+;sunspotnumber = 124
 
 sza=18.24 ; deg
 

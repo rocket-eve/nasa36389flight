@@ -58,6 +58,10 @@ n_wave=n_elements(img[*,0])
 wout=dindgen(3700)*.020d0 + 33.d0 ;min(wimg) 0.2 angstrom
 n_out=n_elements(wout)
 spout=dblarr(n_out)
+
+flux_out = integrate_spectrum( wimg, img, wout, status )
+stop
+
 ;regrid_spectra, wimg, img>(1.e-14), n_spec, n_wave, bytarr(n_spec,n_wave)>1b, $
 regrid_spectra, wimg, img, n_spec, n_wave, bytarr(n_spec,n_wave)>1b, $
                 fltarr(n_spec,n_wave)>1., fltarr(n_spec,n_wave)>1., $
